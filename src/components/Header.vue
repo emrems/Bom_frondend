@@ -11,11 +11,13 @@
         </button>
 
         <nav :class="['nav', { open: isMobileMenuOpen }]">
-          <router-link to="/" class="nav-link" @click="closeMenu">Ana Sayfa</router-link>
+          <router-link to="/" class="nav-link" @click="closeMenu">
+            <i class="fas fa-home"></i> Ana Sayfa
+          </router-link>
 
           <div class="dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
             <button class="nav-link dropdown-toggle">
-              Kategoriler <i class="fas fa-chevron-down"></i>
+              <i class="fas fa-list"></i> Kategoriler <i class="fas fa-chevron-down"></i>
             </button>
             <transition name="fade">
               <div v-if="showDropdown" class="dropdown-menu">
@@ -26,19 +28,46 @@
                   class="dropdown-item"
                   @click="closeMenu"
                 >
-                  {{ category.name }}
+                  <i :class="getCategoryIcon(category.slug)"></i> {{ category.name }}
                 </router-link>
               </div>
             </transition>
           </div>
 
           <router-link to="/cart" class="nav-link cart-link" @click="closeMenu">
-            Sepet
+            <i class="fas fa-shopping-cart"></i> Sepet
             <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
           </router-link>
 
-          <router-link to="/about" class="nav-link" @click="closeMenu">Hakkımızda</router-link>
-          <router-link to="/contact" class="nav-link" @click="closeMenu">İletişim</router-link>
+          <router-link to="/login" class="nav-link" @click="closeMenu" v-if="!isLoggedIn">
+            <i class="fas fa-sign-in-alt"></i> Giriş Yap
+          </router-link>
+
+          <div class="dropdown" @mouseenter="showUserDropdown = true" @mouseleave="showUserDropdown = false" v-else>
+            <button class="nav-link dropdown-toggle">
+              <i class="fas fa-user-circle"></i> Hesabım <i class="fas fa-chevron-down"></i>
+            </button>
+            <transition name="fade">
+              <div v-if="showUserDropdown" class="dropdown-menu">
+                <router-link to="/account" class="dropdown-item" @click="closeMenu">
+                  <i class="fas fa-user"></i> Profil
+                </router-link>
+                <router-link to="/orders" class="dropdown-item" @click="closeMenu">
+                  <i class="fas fa-box-open"></i> Siparişlerim
+                </router-link>
+                <a href="#" class="dropdown-item" @click="logout">
+                  <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                </a>
+              </div>
+            </transition>
+          </div>
+
+          <router-link to="/about" class="nav-link" @click="closeMenu">
+            <i class="fas fa-info-circle"></i> Hakkımızda
+          </router-link>
+          <router-link to="/contact" class="nav-link" @click="closeMenu">
+            <i class="fas fa-envelope"></i> İletişim
+          </router-link>
         </nav>
       </div>
     </div>
@@ -51,7 +80,9 @@ export default {
   data() {
     return {
       showDropdown: false,
+      showUserDropdown: false,
       isMobileMenuOpen: false,
+      isLoggedIn: false, // Gerçek uygulamada bu değer auth durumuna göre ayarlanmalı
       cartItems: [],
       categories: [
         { id: 1, name: 'Altın Takılar', slug: 'altin-takilar' },
@@ -77,11 +108,32 @@ export default {
     closeMenu() {
       this.isMobileMenuOpen = false
       this.showDropdown = false
+      this.showUserDropdown = false
+    },
+    logout() {
+      // Çıkış yapma işlemleri
+      this.isLoggedIn = false
+      this.closeMenu()
+      this.$router.push('/')
+    },
+    getCategoryIcon(slug) {
+      const icons = {
+        'altin-takilar': 'fa-gem',
+        'gumus-takilar': 'fa-ring',
+        'pirlanta-urunler': 'fa-diamond',
+        'bileklikler': 'fa-bracelet',
+        'kolyeler': 'fa-necklace',
+        'yuzukler': 'fa-ring',
+        'kupeeler': 'fa-earrings'
+      }
+      return 'fas ' + (icons[slug] || 'fa-tag')
     }
   },
   mounted() {
     this.updateCartItems()
     window.addEventListener('cartUpdated', this.updateCartItems)
+    // Gerçek uygulamada auth durumu kontrol edilmeli
+    // this.checkAuthStatus()
   },
   beforeUnmount() {
     window.removeEventListener('cartUpdated', this.updateCartItems)
@@ -366,5 +418,49 @@ button:focus, a:focus {
 /* Firefox için */
 button::-moz-focus-inner {
   border: 0;
+}
+.nav-link i {
+  margin-right: 8px;
+  width: 20px;
+  text-align: center;
+}
+
+.dropdown-item i {
+  margin-right: 10px;
+  width: 20px;
+  text-align: center;
+}
+
+/* Font Awesome ikonları için */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+/* Özel ikonlar için (eğer kullanılıyorsa) */
+@font-face {
+  font-family: 'Custom Icons';
+  src: url('path/to/custom-icons.woff2') format('woff2');
+}
+
+.fa-bracelet:before {
+  content: "\f0c1"; /* Örnek ikon, gerçekte uygun bir ikon bulunmalı */
+}
+
+.fa-necklace:before {
+  content: "\f302"; /* Örnek ikon */
+}
+
+.fa-earrings:before {
+  content: "\f0c4"; /* Örnek ikon */
+}
+
+/* Responsive düzenlemeler */
+@media screen and (max-width: 768px) {
+  .nav-link i {
+    margin-right: 12px;
+    font-size: 1.2rem;
+  }
+  
+  .dropdown-item i {
+    margin-right: 15px;
+  }
 }
 </style>
