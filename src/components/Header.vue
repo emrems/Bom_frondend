@@ -5,15 +5,40 @@
         <router-link to="/" class="logo">
           <h1>✨ Altın Kuyumcu</h1>
         </router-link>
-        
-        <nav class="nav">
-          <router-link to="/" class="nav-link">Ana Sayfa</router-link>
-          <router-link to="/cart" class="nav-link cart-link">
+
+        <button class="hamburger" @click="isMobileMenuOpen = !isMobileMenuOpen">
+          <span :class="{ open: isMobileMenuOpen }"></span>
+        </button>
+
+        <nav :class="['nav', { open: isMobileMenuOpen }]">
+          <router-link to="/" class="nav-link" @click="closeMenu">Ana Sayfa</router-link>
+
+          <div class="dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
+            <button class="nav-link dropdown-toggle">
+              Kategoriler <i class="fas fa-chevron-down"></i>
+            </button>
+            <transition name="fade">
+              <div v-if="showDropdown" class="dropdown-menu">
+                <router-link
+                  v-for="category in categories"
+                  :key="category.id"
+                  :to="`/category/${category.slug}`"
+                  class="dropdown-item"
+                  @click="closeMenu"
+                >
+                  {{ category.name }}
+                </router-link>
+              </div>
+            </transition>
+          </div>
+
+          <router-link to="/cart" class="nav-link cart-link" @click="closeMenu">
             Sepet
             <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
           </router-link>
-          <router-link to="/" class="nav-link">Hakkımızda</router-link>
-          <router-link to="/" class="nav-link">İletişim</router-link>
+
+          <router-link to="/about" class="nav-link" @click="closeMenu">Hakkımızda</router-link>
+          <router-link to="/contact" class="nav-link" @click="closeMenu">İletişim</router-link>
         </nav>
       </div>
     </div>
@@ -23,30 +48,62 @@
 <script>
 export default {
   name: 'Header',
+  data() {
+    return {
+      showDropdown: false,
+      isMobileMenuOpen: false,
+      cartItems: [],
+      categories: [
+        { id: 1, name: 'Altın Takılar', slug: 'altin-takilar' },
+        { id: 2, name: 'Gümüş Takılar', slug: 'gumus-takilar' },
+        { id: 3, name: 'Pırlanta Ürünler', slug: 'pirlanta-urunler' },
+        { id: 4, name: 'Bileklikler', slug: 'bileklikler' },
+        { id: 5, name: 'Kolyeler', slug: 'kolyeler' },
+        { id: 6, name: 'Yüzükler', slug: 'yuzukler' },
+        { id: 7, name: 'Küpeler', slug: 'kupeeler' }
+      ]
+    }
+  },
   computed: {
     cartItemCount() {
+      return this.cartItems.reduce((total, item) => total + item.quantity, 0)
+    }
+  },
+  methods: {
+    updateCartItems() {
       const cart = JSON.parse(localStorage.getItem('cartItems') || '[]')
-      return cart.reduce((total, item) => total + item.quantity, 0)
+      this.cartItems = cart
+    },
+    closeMenu() {
+      this.isMobileMenuOpen = false
+      this.showDropdown = false
     }
   },
   mounted() {
-    // Sepet güncellendiğinde header'ı yeniden render et
-    window.addEventListener('cartUpdated', () => {
-      this.$forceUpdate()
-    })
+    this.updateCartItems()
+    window.addEventListener('cartUpdated', this.updateCartItems)
+  },
+  beforeUnmount() {
+    window.removeEventListener('cartUpdated', this.updateCartItems)
   }
 }
 </script>
 
 <style scoped>
 .header {
-  background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-  color: white;
+  background: white;
+  color: #d4af37;
   padding: 1rem 0;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .header-content {
@@ -68,55 +125,246 @@ export default {
 
 .nav {
   display: flex;
-  gap: 2rem;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .nav-link {
-  color: white;
+  color: #d4af37;
   text-decoration: none;
   font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
+  padding: 0.5rem 0;
   position: relative;
+  transition: color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nav-link:hover {
-  background: rgba(212, 175, 55, 0.1);
-  color: #d4af37;
+  color: black;
+}
+
+.nav-link:hover::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #d4af37;
+  animation: underline 0.3s ease forwards;
+}
+
+@keyframes underline {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 .cart-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  position: relative;
 }
 
 .cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
   background: #d4af37;
-  color: #1a1a1a;
+  color: black;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    gap: 1rem;
+/* Dropdown */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dropdown-toggle:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 0;
+  z-index: 999;
+  min-width: 200px;
+  transform-origin: top center;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.75rem 1.5rem;
+  color: #333;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dropdown-item:focus {
+  outline: none;
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.dropdown-item:hover {
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.1);
+  padding-left: 1.75rem;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
+/* Hamburger */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 24px;
+  height: 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 1001;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hamburger:focus {
+  outline: none;
+}
+
+.hamburger span,
+.hamburger span::before,
+.hamburger span::after {
+  content: '';
+  display: block;
+  background: #d4af37;
+  height: 3px;
+  border-radius: 2px;
+  transition: 0.3s ease;
+  position: relative;
+}
+
+.hamburger span.open {
+  background: transparent;
+}
+
+.hamburger span.open::before {
+  transform: rotate(45deg);
+  top: 0;
+}
+
+.hamburger span.open::after {
+  transform: rotate(-45deg);
+  top: 0;
+}
+
+.hamburger span::before,
+.hamburger span::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #d4af37;
+}
+
+.hamburger span::before {
+  top: -8px;
+}
+
+.hamburger span::after {
+  top: 8px;
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+  .hamburger {
+    display: flex;
   }
-  
-  .logo h1 {
-    font-size: 1.5rem;
-  }
-  
+
   .nav {
-    gap: 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    width: 100%;
+    height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    display: none;
+    z-index: 1000;
   }
+
+  .nav.open {
+    display: flex;
+  }
+
+  .nav-link {
+    font-size: 1.2rem;
+    margin: 0.5rem 0;
+    color: #333;
+  }
+
+  .dropdown-menu {
+    position: static;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+    animation: none;
+  }
+
+  .dropdown-item {
+    color: #555;
+    padding: 0.75rem 1rem;
+  }
+
+  .dropdown-item:hover {
+    color: #d4af37;
+    background: transparent;
+    padding-left: 1rem;
+  }
+}
+
+/* Tüm focus outline'ları kaldırma */
+button:focus, a:focus {
+  outline: none;
+}
+
+/* Firefox için */
+button::-moz-focus-inner {
+  border: 0;
 }
 </style>

@@ -6,8 +6,37 @@
         <div class="hero-content">
           <h1>En Güzel Mücevherler</h1>
           <p>Özel tasarım altın ve mücevher koleksiyonumuzu keşfedin</p>
-          <router-link to="#products" class="btn hero-btn">Ürünleri İncele</router-link>
+          <a href="#products" class="btn hero-btn">Ürünleri İncele</a>
         </div>
+      </div>
+    </section>
+
+    <!-- Featured Slider -->
+    <section class="featured-slider">
+      <div class="container">
+        <h2>Öne Çıkan Ürünler</h2>
+        <swiper
+          :modules="modules"
+          :slides-per-view="1"
+          :space-between="30"
+          :pagination="{ clickable: true }"
+          :autoplay="{ delay: 5000, disableOnInteraction: false }"
+          :breakpoints="{
+            640: { slidesPerView: 2 },
+            1024: { slidesPerView: 3 }
+          }"
+          class="swiper-container"
+        >
+          <swiper-slide v-for="product in featuredProducts" :key="product.id">
+            <div class="slide-content" @click="goToProduct(product.id)">
+              <img :src="product.image" :alt="product.name" />
+              <div class="slide-overlay">
+                <h3>{{ product.name }}</h3>
+                <p>{{ formatPrice(product.price) }} TL</p>
+              </div>
+            </div>
+          </swiper-slide>
+        </swiper>
       </div>
     </section>
 
@@ -68,11 +97,63 @@
 </template>
 
 <script>
+// Swiper için gerekli importlar
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Autoplay, Pagination } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+
 export default {
   name: 'Home',
+  components: {
+    Swiper,
+    SwiperSlide
+  },
+  setup() {
+    return {
+      modules: [Autoplay, Pagination]
+    }
+  },
   data() {
     return {
       products: [],
+      featuredProducts: [
+        {
+          id: 1,
+          name: "Premium Altın Kolye",
+          category: "Kolye",
+          price: 12500,
+          image: "https://images.pexels.com/photos/1458867/pexels-photo-1458867.jpeg"
+        },
+        {
+          id: 2,
+          name: "Elmas Yüzük",
+          category: "Yüzük",
+          price: 18900,
+          image: "https://images.pexels.com/photos/1191531/pexels-photo-1191531.jpeg"
+        },
+        {
+          id: 3,
+          name: "Lüks Bileklik Set",
+          category: "Set",
+          price: 24500,
+          image: "https://images.pexels.com/photos/3266700/pexels-photo-3266700.jpeg"
+        },
+        {
+          id: 4,
+          name: "Vintage Küpeler",
+          category: "Küpe",
+          price: 8500,
+          image: "https://images.pexels.com/photos/3266703/pexels-photo-3266703.jpeg"
+        },
+        {
+          id: 5,
+          name: "Altın Bilezik",
+          category: "Bilezik",
+          price: 9800,
+          image: "https://images.pexels.com/photos/3266701/pexels-photo-3266701.jpeg"
+        }
+      ],
       loading: true,
       error: null
     }
@@ -133,10 +214,6 @@ export default {
           }
         ]
         
-        // Gerçek API çağrısı böyle olacak:
-        // const response = await fetch('/api/products')
-        // this.products = await response.json()
-        
       } catch (error) {
         this.error = 'Ürünler yüklenirken bir hata oluştu.'
         console.error('Products fetch error:', error)
@@ -158,7 +235,7 @@ export default {
 
 <style scoped>
 .hero {
-  background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+  background:#f7f5f2;
   color: white;
   padding: 6rem 0;
   text-align: center;
@@ -177,12 +254,96 @@ export default {
 .hero-content p {
   font-size: 1.3rem;
   margin-bottom: 2rem;
-  color: #ccc;
+  color: #666;
 }
 
-.hero-btn {
+.btn.hero-btn {
+  display: inline-block;
   font-size: 1.1rem;
   padding: 16px 32px;
+  background: #d4af37;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn.hero-btn:hover {
+  background: #f4d03f;
+  transform: translateY(-2px);
+}
+
+/* Featured Slider Styles */
+.featured-slider {
+  padding: 4rem 0;
+  background: #f5f5f5;
+}
+
+.featured-slider h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: #1a1a1a;
+}
+
+.swiper-container {
+  padding: 0 20px 40px;
+}
+
+.slide-content {
+  position: relative;
+  height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.slide-content:hover {
+  transform: scale(1.02);
+}
+
+.slide-content img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.slide-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  padding: 2rem 1.5rem 1.5rem;
+  color: white;
+}
+
+.slide-overlay h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.slide-overlay p {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #d4af37;
+}
+
+/* Swiper pagination styling */
+:deep(.swiper-pagination-bullet) {
+  background: #d4af37;
+  opacity: 0.5;
+  width: 12px;
+  height: 12px;
+}
+
+:deep(.swiper-pagination-bullet-active) {
+  opacity: 1;
 }
 
 .campaigns {
@@ -204,12 +365,12 @@ export default {
 }
 
 .campaign-card {
-  background: linear-gradient(135deg, #d4af37, #f4d03f);
+  background: white;
   color: #1a1a1a;
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: 8px;
   text-align: center;
-  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.1);
   transition: transform 0.3s ease;
 }
 
@@ -221,6 +382,11 @@ export default {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
+  color: #d4af37;
+}
+
+.campaign-card p {
+  color: #666;
 }
 
 .products {
@@ -303,6 +469,7 @@ export default {
     font-size: 1.1rem;
   }
   
+  .featured-slider h2,
   .campaigns h2,
   .products h2 {
     font-size: 2rem;
@@ -315,6 +482,32 @@ export default {
   .product-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1.5rem;
+  }
+  
+  .slide-content {
+    height: 300px;
+  }
+  
+  .slide-overlay h3 {
+    font-size: 1.3rem;
+  }
+  
+  .slide-overlay p {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .slide-content {
+    height: 250px;
+  }
+  
+  .slide-overlay {
+    padding: 1.5rem 1rem 1rem;
+  }
+  
+  .slide-overlay h3 {
+    font-size: 1.1rem;
   }
 }
 </style>
