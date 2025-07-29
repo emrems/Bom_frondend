@@ -7,6 +7,8 @@ import CategoryProducts from '../views/CategoryProducts.vue'
 import About from '../views/About.vue'
 import Contact from '../views/Contact .vue'
 import Loginapp from '../views/Loginapp.vue'
+import Register from '../views/Register.vue'
+import ForgotPassword from '../views/ForgotPassword.vue'
 
 
 const routes = [
@@ -51,6 +53,16 @@ const routes = [
     path: '/login',
     name: 'Loginapp',
     component: Loginapp
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: Register
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword
   }
 ]
 
