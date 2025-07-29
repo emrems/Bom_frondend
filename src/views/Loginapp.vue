@@ -9,7 +9,7 @@
           <p>En değerli anlarınız için en özel tasarımlar.</p>
         </div>
       </div>
-
+      <h2>emre almamıs</h2>
       <!-- SAĞ TARAF: GİRİŞ FORMU -->
       <div class="login-form-section">
         <div class="form-wrapper">
