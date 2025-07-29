@@ -9,6 +9,7 @@
           <a href="#products" class="btn hero-btn">Ürünleri İncele</a>
         </div>
         <h2>emre almamıs</h2>
+        <h2>emredadadads</h2>
       </div>
       
     </section>
