@@ -8,7 +8,9 @@
           <p>Özel tasarım altın ve mücevher koleksiyonumuzu keşfedin</p>
           <a href="#products" class="btn hero-btn">Ürünleri İncele</a>
         </div>
+        <h2>emre almamıs</h2>
       </div>
+      
     </section>
 
     <!-- Featured Slider -->
