@@ -1,46 +1,61 @@
 <template>
   <div class="login-page">
     <div class="login-container">
-      <!-- SOL TARAF: GÖRSEL BÖLÜMÜ -->
+      <!-- Sol Taraf: Görsel -->
       <div class="login-image-section">
-        <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1887&auto=format&fit=crop" alt="Kuyumcu Atölyesi">
+        <img
+          src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1887&auto=format&fit=crop"
+          alt="Kuyumcu Atölyesi"
+        />
         <div class="image-overlay">
           <h2>Zarafetin ve Güvenin Adresi</h2>
           <p>En değerli anlarınız için en özel tasarımlar.</p>
         </div>
       </div>
-      <h2>emre almamıs</h2>
-      <!-- SAĞ TARAF: GİRİŞ FORMU -->
+
+      <!-- Sağ Taraf: Giriş Formu -->
       <div class="login-form-section">
         <div class="form-wrapper">
           <div class="form-header">
             <router-link to="/" class="logo-link">
-              <!-- Sitenizin logosu veya adı buraya gelebilir -->
               <h3>Altın Kuyumcu</h3>
             </router-link>
             <h1>Giriş Yap</h1>
             <p>Hesabınıza erişmek için bilgilerinizi girin.</p>
           </div>
-          
+
           <form @submit.prevent="handleLogin">
             <div class="form-group">
               <label for="email">E-posta Adresi</label>
-              <input type="email" id="email" v-model="email" required placeholder="ornek@email.com">
+              <input
+                type="email"
+                id="email"
+                v-model="email"
+                required
+                placeholder="ornek@email.com"
+              />
             </div>
             <div class="form-group">
               <label for="password">Şifre</label>
-              <input type="password" id="password" v-model="password" required placeholder="••••••••">
+              <input
+                type="password"
+                id="password"
+                v-model="password"
+                required
+                placeholder="••••••••"
+              />
             </div>
-            
-            <!-- Hata Mesajı Alanı -->
+
             <div v-if="error" class="error-message">
               {{ error }}
             </div>
 
             <div class="form-actions">
-                <router-link to="/forgot-password" class="forgot-password">Şifremi Unuttum</router-link>
+              <router-link to="/forgot-password" class="forgot-password"
+                >Şifremi Unuttum</router-link
+              >
             </div>
-            
+
             <button type="submit" class="btn-login" :disabled="isLoading">
               <span v-if="isLoading">Giriş Yapılıyor...</span>
               <span v-else>Giriş Yap</span>
@@ -48,7 +63,10 @@
           </form>
 
           <div class="register-link">
-            <p>Hesabınız yok mu? <router-link to="/register">Hemen Kayıt Olun</router-link></p>
+            <p>
+              Hesabınız yok mu?
+              <router-link to="/register">Hemen Kayıt Olun</router-link>
+            </p>
           </div>
         </div>
       </div>
@@ -57,57 +75,58 @@
 </template>
 
 <script>
+import axios from "axios";
+import { mapActions } from "vuex";
+
 export default {
-  name: 'LoginPage',
+  name: "LoginPage",
   data() {
     return {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
       isLoading: false,
-      error: null
+      error: null,
     };
   },
   methods: {
+    ...mapActions(["login"]),
+
     async handleLogin() {
       this.isLoading = true;
       this.error = null;
 
       try {
-        // API Base URL'ini projenizin yapısına göre bir environment dosyasından almak en iyisidir.
-        const API_BASE_URL = 'https://localhost:7001/api'; // Port numarasını kendi projenize göre güncelleyin.
-
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const response = await axios.post(
+          "https://localhost:7135/api/Auth/Login",
+          {
             email: this.email,
             password: this.password,
-          }),
-        });
+          }
+        );
 
-        const data = await response.json();
+        // API'den dönen veriyi kontrol edin
+        console.log("API Response:", response.data);
 
-        if (!response.ok) {
-          // API'den gelen hata mesajını kullanıyoruz, yoksa genel bir mesaj gösteriyoruz.
-          throw new Error(data.message || 'E-posta veya şifre hatalı.');
+        if (response.data.token) {
+          // Token'ı string olarak kaydedin
+          localStorage.setItem("authToken", response.data.token);
+
+          // Vuex store'a token'ı kaydet
+          this.$store.commit("SET_TOKEN", response.data.token);
+
+          this.$router.push("/");
+        } else {
+          throw new Error("Token alınamadı");
         }
-
-        // Başarılı girişte token'ı localStorage'a kaydediyoruz.
-        localStorage.setItem('authToken', data.token);
-
-        // Kullanıcıyı anasayfaya yönlendiriyoruz.
-        this.$router.push('/');
-
       } catch (err) {
-        this.error = err.message;
+        console.error("Login error:", err.response?.data || err.message);
+        this.error = err.response?.data?.message || "Giriş yapılamadı";
       } finally {
         this.isLoading = false;
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style scoped>
@@ -155,7 +174,7 @@ export default {
   padding: 40px;
 }
 .image-overlay h2 {
-  font-family: 'Cinzel', serif; /* Şık bir serif font */
+  font-family: "Cinzel", serif; /* Şık bir serif font */
   font-size: 2.5rem;
   margin-bottom: 1rem;
 }
@@ -185,7 +204,7 @@ export default {
   color: #1a1a1a;
 }
 .form-header h3 {
-  font-family: 'Cinzel', serif;
+  font-family: "Cinzel", serif;
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -218,7 +237,7 @@ export default {
 }
 .form-group input:focus {
   outline: none;
-  border-color: #D4AF37;
+  border-color: #d4af37;
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
 }
 .form-actions {
@@ -227,7 +246,7 @@ export default {
   margin-bottom: 1.5rem;
 }
 .forgot-password {
-  color: #D4AF37;
+  color: #d4af37;
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -269,7 +288,7 @@ export default {
   color: #666;
 }
 .register-link a {
-  color: #D4AF37;
+  color: #d4af37;
   font-weight: 600;
   text-decoration: none;
 }

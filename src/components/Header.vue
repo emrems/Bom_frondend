@@ -75,6 +75,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 export default {
   name: 'Header',
   data() {
@@ -84,15 +85,7 @@ export default {
       isMobileMenuOpen: false,
       isLoggedIn: false, // Gerçek uygulamada bu değer auth durumuna göre ayarlanmalı
       cartItems: [],
-      categories: [
-        { id: 1, name: 'Altın Takılar', slug: 'altin-takilar' },
-        { id: 2, name: 'Gümüş Takılar', slug: 'gumus-takilar' },
-        { id: 3, name: 'Pırlanta Ürünler', slug: 'pirlanta-urunler' },
-        { id: 4, name: 'Bileklikler', slug: 'bileklikler' },
-        { id: 5, name: 'Kolyeler', slug: 'kolyeler' },
-        { id: 6, name: 'Yüzükler', slug: 'yuzukler' },
-        { id: 7, name: 'Küpeler', slug: 'kupeeler' }
-      ]
+      categories: []
     }
   },
   computed: {
@@ -101,6 +94,15 @@ export default {
     }
   },
   methods: {
+    async fetchCategories(){
+      try {
+        const response = await axios.get(`https://localhost:7135/api/Categories`);
+        this.categories = response.data;
+        console.log(response.data);
+      } catch (error) {
+        console.log(error)
+      }
+    },
     updateCartItems() {
       const cart = JSON.parse(localStorage.getItem('cartItems') || '[]')
       this.cartItems = cart
@@ -130,6 +132,7 @@ export default {
     }
   },
   mounted() {
+    this.fetchCategories()
     this.updateCartItems()
     window.addEventListener('cartUpdated', this.updateCartItems)
     // Gerçek uygulamada auth durumu kontrol edilmeli

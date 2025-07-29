@@ -1,7 +1,6 @@
 <template>
   <div class="register-page">
     <div class="register-container">
-      <!-- SOL TARAF: GÖRSEL BÖLÜMÜ -->
       <div class="register-image-section">
         <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1887&auto=format&fit=crop" alt="Kuyumcu Vitrini">
         <div class="image-overlay">
@@ -10,7 +9,6 @@
         </div>
       </div>
 
-      <!-- SAĞ TARAF: KAYIT FORMU -->
       <div class="register-form-section">
         <div class="form-wrapper">
           <div class="form-header">
@@ -32,10 +30,38 @@
                 <input type="text" id="lastName" v-model="form.lastName" required>
               </div>
             </div>
+
+            <div class="form-group">
+              <label for="tcKimlikNo">TC Kimlik No</label>
+              <input 
+                type="text" 
+                id="tcKimlikNo" 
+                v-model="form.tcKimlikNo" 
+                required
+                pattern="[0-9]{11}"
+                title="11 haneli TC kimlik numaranızı giriniz"
+                @input="validateTC"
+              >
+              <small v-if="tcError" class="error-text">{{ tcError }}</small>
+            </div>
+
+            <div class="form-group">
+              <label for="phoneNumber">Telefon Numarası</label>
+              <input 
+                type="tel" 
+                id="phoneNumber" 
+                v-model="form.phoneNumber" 
+                required
+                pattern="[0-9]{10}"
+                title="10 haneli telefon numaranızı giriniz (örn: 5551234567)"
+              >
+            </div>
+
             <div class="form-group">
               <label for="email">E-posta Adresi</label>
               <input type="email" id="email" v-model="form.email" required>
             </div>
+            
             <div class="form-group">
               <label for="password">Şifre</label>
               <input type="password" id="password" v-model="form.password" required>
@@ -45,17 +71,20 @@
               <input type="password" id="confirmPassword" v-model="form.confirmPassword" required>
             </div>
             
-            <!-- Hata ve Başarı Mesajları -->
             <div v-if="error" class="error-message">
-              {{ error }}
+              <i class="fas fa-exclamation-circle"></i> {{ error }}
             </div>
              <div v-if="successMessage" class="success-message">
-              {{ successMessage }}
+              <i class="fas fa-check-circle"></i> {{ successMessage }}
             </div>
 
-            <button type="submit" class="btn-register" :disabled="isLoading">
-              <span v-if="isLoading">Hesap Oluşturuluyor...</span>
-              <span v-else>Kayıt Ol</span>
+            <button type="submit" class="btn-register" :disabled="isLoading || tcError">
+              <span v-if="isLoading">
+                <i class="fas fa-spinner fa-spin"></i> Hesap Oluşturuluyor...
+              </span>
+              <span v-else>
+                <i class="fas fa-user-plus"></i> Kayıt Ol
+              </span>
             </button>
           </form>
 
@@ -69,6 +98,8 @@
 </template>
 
 <script>
+import axios from 'axios'; // Axios'u kullanmak için import ettim
+
 export default {
   name: 'RegisterPage',
   data() {
@@ -76,20 +107,74 @@ export default {
       form: {
         firstName: '',
         lastName: '',
+        tcKimlikNo: '', 
+        phoneNumber: '', 
         email: '',
         password: '',
         confirmPassword: ''
       },
       isLoading: false,
       error: null,
-      successMessage: null
+      successMessage: null,
+      tcError: null 
     };
   },
   methods: {
+    validateTC() {
+      const tcNo = this.form.tcKimlikNo;
+      this.tcError = null; // Her doğrulama öncesi hatayı sıfırla
+
+      if (!tcNo) { // Alan boşsa hata verme
+        return false;
+      }
+      
+      // Sadece rakam içermeli ve 11 haneli olmalı
+      if (tcNo.length !== 11 || !/^[0-9]+$/.test(tcNo)) {
+        this.tcError = "TC Kimlik No 11 haneli rakamlardan oluşmalıdır.";
+        return false;
+      }
+
+      // İlk hane sıfır olamaz
+      if (tcNo[0] === '0') {
+          this.tcError = "TC Kimlik Numarası '0' ile başlayamaz.";
+          return false;
+      }
+
+      const digits = tcNo.split('').map(Number);
+      
+      // 10. haneyi kontrol et
+      const sumOdd = digits[0] + digits[2] + digits[4] + digits[6] + digits[8];
+      const sumEven = digits[1] + digits[3] + digits[5] + digits[7];
+      const calculatedTenthDigit = (sumOdd * 7 - sumEven) % 10;
+
+      if (calculatedTenthDigit !== digits[9]) {
+        this.tcError = "Geçersiz TC Kimlik Numarası.";
+        return false;
+      }
+
+      // 11. haneyi kontrol et
+      const sumFirstTen = digits.slice(0, 10).reduce((acc, val) => acc + val, 0); 
+      const calculatedEleventhDigit = sumFirstTen % 10;
+      
+      if (calculatedEleventhDigit !== digits[10]) {
+        this.tcError = "Geçersiz TC Kimlik Numarası.";
+        return false;
+      }
+      
+      this.tcError = null; 
+      return true;
+    },
+
     async handleRegister() {
       // Önce şifrelerin eşleşip eşleşmediğini kontrol et
       if (this.form.password !== this.form.confirmPassword) {
         this.error = 'Şifreler uyuşmuyor. Lütfen kontrol edin.';
+        return;
+      }
+
+      // TC kimlik no doğrulama
+      if (!this.validateTC()) {
+        this.error = this.tcError || 'Lütfen geçerli bir TC kimlik numarası giriniz.';
         return;
       }
 
@@ -98,30 +183,21 @@ export default {
       this.successMessage = null;
 
       try {
-        const API_BASE_URL = 'https://localhost:7001/api'; // Port numarasını kendi projenize göre güncelleyin.
+       
+        const API_BASE_URL = 'https://localhost:7135/api'; 
 
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            firstName: this.form.firstName,
-            lastName: this.form.lastName,
-            email: this.form.email,
-            password: this.form.password,
-            confirmPassword: this.form.confirmPassword,
-          }),
+        const response = await axios.post(`${API_BASE_URL}/Auth/Register`, {
+          firstName: this.form.firstName,
+          lastName: this.form.lastName,
+          email: this.form.email,
+          password: this.form.password,
+          confirmPassword: this.form.confirmPassword,
+          tcKimlikNo: this.form.tcKimlikNo, 
+          phoneNumber: this.form.phoneNumber 
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Kayıt sırasında bir hata oluştu.');
-        }
-
         // Başarılı kayıt mesajını göster
-        this.successMessage = data.message + ' Giriş sayfasına yönlendiriliyorsunuz...';
+        this.successMessage = response.data.message || 'Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...';
 
         // 3 saniye sonra kullanıcıyı login sayfasına yönlendir
         setTimeout(() => {
@@ -129,7 +205,19 @@ export default {
         }, 3000);
 
       } catch (err) {
-        this.error = err.message;
+        if (err.response) {
+          // API'den gelen hata mesajlarını işle (örneğin FluentValidation hataları)
+          if (err.response.data.errors) {
+            // Eğer birden fazla hata varsa, bunları birleştirerek göster
+            this.error = Object.values(err.response.data.errors).flat().join('\n');
+          } else {
+            this.error = err.response.data.message || 'Kayıt sırasında bir hata oluştu.';
+          }
+        } else {
+          // Ağ hataları veya fetch ile ilgili diğer hatalar
+          this.error = 'Sunucuyla bağlantı kurulamadı veya beklenmedik bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+        }
+        console.error('Kayıt hatası:', err);
       } finally {
         this.isLoading = false;
       }
@@ -139,7 +227,11 @@ export default {
 </script>
 
 <style scoped>
-/* Login sayfasıyla büyük ölçüde aynı stiller kullanılarak marka bütünlüğü sağlandı */
+/* Font Awesome ikonları için */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Segoe+UI:wght@400;500;600;700&display=swap');
+
+
 .register-page {
   display: flex;
   justify-content: center;
@@ -147,6 +239,7 @@ export default {
   min-height: 100vh;
   background-color: #f8f9fa;
   padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
 }
 
 .register-container {
@@ -164,7 +257,7 @@ export default {
 .register-image-section {
   flex: 1;
   position: relative;
-  min-height: 300px;
+  min-height: 300px; 
 }
 .register-image-section img {
   width: 100%;
@@ -183,13 +276,15 @@ export default {
   padding: 40px;
 }
 .image-overlay h2 {
-  font-family: 'Cinzel', serif;
+  font-family: 'Cinzel', serif; 
   font-size: 2.5rem;
   margin-bottom: 1rem;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.5); 
 }
 .image-overlay p {
   font-size: 1.1rem;
   max-width: 80%;
+  line-height: 1.6;
 }
 
 /* Sağ Taraf: Form */
@@ -199,10 +294,11 @@ export default {
   justify-content: center;
   align-items: center;
   padding: 40px;
+  background-color: #fcfcfc; 
 }
 .form-wrapper {
   width: 100%;
-  max-width: 400px;
+  max-width: 450px; 
 }
 .form-header {
   text-align: center;
@@ -214,74 +310,95 @@ export default {
 }
 .form-header h3 {
   font-family: 'Cinzel', serif;
-  font-size: 1.5rem;
+  font-size: 1.8rem; 
   margin-bottom: 1.5rem;
+  color: #D4AF37; 
 }
 .form-header h1 {
-  font-size: 2rem;
+  font-size: 2.2rem; 
   margin-bottom: 0.5rem;
+  color: #343a40; 
 }
 .form-header p {
-  color: #666;
+  color: #6c757d; 
+  font-size: 0.95rem;
 }
 
 /* Form Elemanları */
 .form-row {
   display: flex;
-  gap: 1rem;
+  gap: 15px; 
 }
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem; 
   flex: 1;
 }
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 600;
+  font-weight: 500; 
+  color: #495057; 
+  font-size: 0.9rem;
 }
 .form-group input {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border: 1px solid #ced4da; 
+  border-radius: 8px; 
   font-size: 1rem;
-  background-color: #f8f9fa;
+  background-color: #ffffff; 
   transition: all 0.3s ease;
-  color: #1a1a1a; /* YAZI RENGİ SİYAH YAPILDI */
+  color: #343a40; 
 }
 .form-group input:focus {
   outline: none;
-  border-color: #D4AF37;
+  border-color: #D4AF37; 
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
 }
 .btn-register {
   width: 100%;
-  padding: 15px;
-  background-color: #1a1a1a;
-  color: white;
+  padding: 14px 20px; 
+  background-color: #D4AF37; 
+  color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px; 
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  margin-top: 1rem;
+  transition: background-color 0.3s ease, transform 0.2s ease; 
+  margin-top: 1.5rem; 
+  display: flex; 
+  align-items: center;
+  justify-content: center;
 }
 .btn-register:hover:not(:disabled) {
-  background-color: #333;
+  background-color: #c09a25; 
+  transform: translateY(-2px); 
 }
 .btn-register:disabled {
-  background-color: #ccc;
+  background-color: #e6d8b6; 
   cursor: not-allowed;
+}
+
+/* Yeni Hata Mesajı Stili (TC için) */
+.error-text {
+  color: #dc3545; 
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  display: block;
 }
 
 /* Hata ve Başarı Mesajları */
 .error-message, .success-message {
   border: 1px solid;
-  padding: 10px;
-  border-radius: 6px;
-  text-align: center;
-  margin-bottom: 1.5rem;
+  padding: 12px 15px; 
+  border-radius: 8px; 
+  text-align: left; 
+  margin-top: 20px; 
+  font-size: 0.95rem;
+  display: flex; 
+  align-items: center;
+  gap: 10px; 
 }
 .error-message {
   background-color: #f8d7da;
@@ -294,29 +411,81 @@ export default {
   border-color: #c3e6cb;
 }
 
+/* Font Awesome ikonları için stil */
+.error-message i, .success-message i, .btn-register i {
+  margin-right: 8px; 
+  font-size: 1rem;
+}
+.btn-register i {
+  margin-right: 10px;
+}
+
 /* Giriş Linki */
 .login-link {
   text-align: center;
   margin-top: 2rem;
-  color: #666;
+  color: #6c757d; 
+  font-size: 0.95rem;
 }
 .login-link a {
-  color: #D4AF37;
+  color: #D4AF37; 
   font-weight: 600;
   text-decoration: none;
+}
+.login-link a:hover {
+  text-decoration: underline; 
 }
 
 /* Mobil Uyum */
 @media (min-width: 992px) {
   .register-container {
-    flex-direction: row;
-    min-height: 700px;
+    flex-direction: row; 
+    min-height: 700px; 
   }
 }
-@media (max-width: 768px) {
+@media (max-width: 991px) { 
+  .register-container {
+    flex-direction: column; 
+  }
+  .register-image-section {
+    min-height: 250px; 
+  }
+  .image-overlay {
+    padding: 30px;
+  }
+  .image-overlay h2 {
+    font-size: 2rem;
+  }
+  .image-overlay p {
+    font-size: 1rem;
+  }
+  .register-form-section {
+    padding: 30px;
+  }
+  .form-header {
+    margin-bottom: 2rem;
+  }
+}
+
+@media (max-width: 576px) { 
   .form-row {
-    flex-direction: column;
-    gap: 0;
+    flex-direction: column; 
+    gap: 0; 
+  }
+  .form-group {
+    margin-bottom: 1rem; 
+  }
+  .register-page {
+    padding: 10px;
+  }
+  .register-form-section {
+    padding: 20px;
+  }
+  .form-header h1 {
+    font-size: 1.8rem;
+  }
+  .form-header h3 {
+    font-size: 1.4rem;
   }
 }
 </style>
