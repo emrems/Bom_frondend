@@ -6,6 +6,8 @@ import Checkout from '../views/Checkout.vue'
 import CategoryProducts from '../views/CategoryProducts.vue'
 import About from '../views/About.vue'
 import Contact from '../views/Contact .vue'
+import Loginapp from '../views/Loginapp.vue'
+
 
 const routes = [
   {
@@ -44,6 +46,11 @@ const routes = [
     name: 'CategoryProducts',
     component: CategoryProducts,
     props: true
+  },
+  {
+    path: '/login',
+    name: 'Loginapp',
+    component: Loginapp
   }
 ]
 
