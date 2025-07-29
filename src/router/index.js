@@ -1,74 +1,55 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../views/Home.vue'
-import ProductDetail from '../views/ProductDetail.vue'
-import Cart from '../views/Cart.vue'
-import Checkout from '../views/Checkout.vue'
-import CategoryProducts from '../views/CategoryProducts.vue'
-import About from '../views/About.vue'
-import Contact from '../views/Contact .vue'
-import Loginapp from '../views/Loginapp.vue'
-import Register from '../views/Register.vue'
-import ForgotPassword from '../views/ForgotPassword.vue'
-
+import { createRouter, createWebHistory } from "vue-router";
+import Home from "../views/Home.vue";
+import ProductDetail from "../views/ProductDetail.vue";
+import Cart from "../views/Cart.vue";
+import Checkout from "../views/Checkout.vue";
+import CategoryProducts from "../views/CategoryProducts.vue";
+import About from "../views/About.vue";
+import Contact from "../views/Contact .vue";
 
 const routes = [
   {
-    path: '/',
-    name: 'Home',
-    component: Home
-  },
-   {
-    path: '/about',
-    name: 'About',
-    component: About
+    path: "/",
+    name: "Home",
+    component: Home,
   },
   {
-    path: '/contact',
-    name: 'Contact',
-    component: Contact
+    path: "/about",
+    name: "About",
+    component: About,
   },
   {
-    path: '/product/:id',
-    name: 'ProductDetail',
+    path: "/contact",
+    name: "Contact",
+    component: Contact,
+  },
+  {
+    path: "/product/:id",
+    name: "ProductDetail",
     component: ProductDetail,
-    props: true
+    props: true,
   },
   {
-    path: '/cart',
-    name: 'Cart',
-    component: Cart
+    path: "/cart",
+    name: "Cart",
+    component: Cart,
   },
   {
-    path: '/checkout',
-    name: 'Checkout',
-    component: Checkout
+    path: "/checkout",
+    name: "Checkout",
+    component: Checkout,
   },
-   {
-    path: '/category/:slug',
-    name: 'CategoryProducts',
+  {
+    path: "/category/:slug",
+    name: "CategoryProducts",
     component: CategoryProducts,
-    props: true
+    props: true,
   },
-  {
-    path: '/login',
-    name: 'Loginapp',
-    component: Loginapp
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: Register
-  },
-  {
-    path: '/forgot-password',
-    name: 'ForgotPassword',
-    component: ForgotPassword
-  }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
-export default router
+export default router;
