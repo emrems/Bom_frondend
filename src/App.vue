@@ -1,8 +1,15 @@
 <template>
   <div id="app">
-    <Header />
-    <router-view />
-    <Footer />
+    <!-- Sadece showHeaderFooter true ise Header'ı göster -->
+    <Header v-if="showHeaderFooter" />
+    
+    <!-- main etiketi, hem footer'ı aşağıda tutar hem de içeriği sarmalar -->
+    <main>
+      <router-view />
+    </main>
+    
+    <!-- Sadece showHeaderFooter true ise Footer'ı göster -->
+    <Footer v-if="showHeaderFooter" />
   </div>
 </template>
 
@@ -15,6 +22,16 @@ export default {
   components: {
     Header,
     Footer
+  },
+  computed: {
+    // Bu metod, o anki sayfanın adını kontrol eder.
+    showHeaderFooter() {
+      // Header ve Footer'ın GÖRÜNMEYECEĞİ sayfaların isimlerini bu listeye ekliyoruz.
+      const pagesWithoutLayout = ['Loginapp', 'Register', 'ForgotPassword'];
+      
+      // Eğer o anki sayfanın adı bu listede DEĞİLSE, true döner (yani Header/Footer görünür).
+      return !pagesWithoutLayout.includes(this.$route.name);
+    }
   }
 }
 </script>
@@ -37,6 +54,11 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Bu kural, içerik kısa bile olsa footer'ın sayfanın en altında kalmasını sağlar. */
+main {
+  flex-grow: 1;
 }
 
 .container {
