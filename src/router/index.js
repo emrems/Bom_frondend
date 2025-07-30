@@ -1,4 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
+// Vuex store'u buraya import etmelisiniz!
+import store from './../store'; // Varsayılan Vuex store yolu
+
 import Home from "../views/Home.vue";
 import ProductDetail from "../views/ProductDetail.vue";
 import Cart from "../views/Cart.vue";
@@ -9,6 +12,7 @@ import Contact from "../views/Contact .vue";
 import Loginapp from "../views/Loginapp.vue";
 import Register from "../views/Register.vue";
 import ForgotPassword from "../views/ForgotPassword.vue";
+import UserProfile from "../userPages/UserProfile.vue"; // Doğru yol: userPages/UserProfile.vue
 
 const routes = [
   {
@@ -43,6 +47,12 @@ const routes = [
     component: Checkout,
   },
   {
+    path: '/account', // Header'da 'Profil' linkinin gittiği yol
+    name: 'UserProfile',
+    component: UserProfile,
+    meta: { requiresAuth: true } // Bu rotanın kimlik doğrulaması gerektirdiğini belirtin
+  },
+  {
     path: "/category/:slug",
     name: "CategoryProducts",
     component: CategoryProducts,
@@ -68,6 +78,16 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+// Global Navigasyon Koruması (Navigation Guard)
+router.beforeEach((to, from, next) => {
+  // `store` objesi artık import edildiği için burada erişilebilir.
+  if (to.meta.requiresAuth && !store.getters.isAuthenticated) {
+    next('/login'); // Giriş sayfasına yönlendir
+  } else {
+    next(); // Devam et
+  }
 });
 
 export default router;

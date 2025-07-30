@@ -1,71 +1,98 @@
 <template>
   <div class="product-detail">
     <div class="container">
-      <div v-if="loading" class="loading">
-        Ürün detayları yükleniyor...
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Ürün detayları yükleniyor...</p>
       </div>
-      
-      <div v-else-if="error" class="error">
-        {{ error }}
+
+      <div v-else-if="error" class="error-state">
+        <i class="fas fa-exclamation-circle"></i>
+        <p>{{ error }}</p>
       </div>
-      
+
       <div v-else-if="product" class="product-content">
         <div class="product-images">
-          <img :src="product.image" :alt="product.name" class="main-image" />
+          <img
+            :src="mainImage"
+            :alt="product.name"
+            class="main-image"
+          />
+          <div v-if="product.imageUrls && product.imageUrls.length > 1" class="thumbnail-gallery">
+            <img
+              v-for="(imgUrl, index) in product.imageUrls"
+              :key="index"
+              :src="imgUrl"
+              :alt="`${product.name} - ${index + 1}`"
+              :class="{ 'active': imgUrl === mainImage }"
+              @click="setMainImage(imgUrl)"
+              class="thumbnail-image"
+            />
+          </div>
         </div>
-        
+
         <div class="product-info">
           <nav class="breadcrumb">
             <router-link to="/">Ana Sayfa</router-link>
             <span>/</span>
-            <span>{{ product.category }}</span>
+            <router-link :to="`/category/${product.categorySlug}`">{{ product.categoryName }}</router-link>
             <span>/</span>
             <span>{{ product.name }}</span>
           </nav>
-          
+
           <h1>{{ product.name }}</h1>
-          <p class="category">{{ product.category }}</p>
-          
+          <p class="category">{{ product.categoryName }}</p>
+
           <div class="price">{{ formatPrice(product.price) }} TL</div>
-          
+
           <div class="description">
-            <p>{{ product.description }}</p>
+            <p>{{ product.description || 'Bu ürün hakkında detaylı açıklama bulunmamaktadır.' }}</p>
           </div>
-          
+
           <div class="product-specs">
             <h3>Ürün Özellikleri</h3>
             <ul>
-              <li><strong>Malzeme:</strong> {{ product.material }}</li>
-              <li><strong>Ağırlık:</strong> {{ product.weight }}</li>
-              <li><strong>Garanti:</strong> {{ product.warranty }}</li>
+              <li v-if="product.material"><strong>Malzeme:</strong> {{ product.material }}</li>
+              <li v-if="product.weight !== undefined && product.weight !== null"><strong>Ağırlık:</strong> {{ product.weight }} gram</li>
+              <li v-if="product.sku"><strong>SKU:</strong> {{ product.sku }}</li>
+              <li v-if="product.stockQuantity !== undefined && product.stockQuantity !== null"><strong>Stok Durumu:</strong> {{ product.stockQuantity > 0 ? 'Stokta Var' : 'Tükendi' }}</li>
             </ul>
           </div>
-          
+
           <div class="add-to-cart-section">
             <div class="quantity-selector">
               <label>Adet:</label>
               <div class="quantity-controls">
                 <button @click="decreaseQuantity" :disabled="quantity <= 1">-</button>
                 <span class="quantity">{{ quantity }}</span>
-                <button @click="increaseQuantity">+</button>
+                <button @click="increaseQuantity" :disabled="quantity >= product.stockQuantity">+</button>
               </div>
             </div>
-            
-            <button @click="addToCart" class="btn add-to-cart-btn">
-              Sepete Ekle
+
+            <button @click="addToCart" class="btn add-to-cart-btn" :disabled="product.stockQuantity === 0">
+              <i class="fas fa-shopping-cart"></i> Sepete Ekle
             </button>
           </div>
-          
-          <div v-if="addedToCart" class="success-message">
-            ✅ Ürün sepete eklendi!
-          </div>
+
+          <transition name="fade">
+            <div v-if="addedToCart" class="success-message">
+              ✅ Ürün sepete eklendi!
+            </div>
+          </transition>
         </div>
+      </div>
+      <div v-else class="no-product-found">
+        <i class="fas fa-box-open"></i>
+        <p>Ürün bulunamadı.</p>
+        <router-link to="/" class="btn back-home-btn">Ana Sayfaya Dön</router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'ProductDetail',
   props: ['id'],
@@ -75,263 +102,357 @@ export default {
       loading: true,
       error: null,
       quantity: 1,
-      addedToCart: false
-    }
+      addedToCart: false,
+      mainImage: 'https://via.placeholder.com/500/F8F8F8/C0C0C0?text=Resim+Yok' // Varsayılan resim
+    };
   },
-  mounted() {
-    this.fetchProduct()
+  async created() {
+    // Component oluşturulduğunda ve id değiştiğinde çalışır
+    await this.fetchProduct();
   },
   watch: {
-    id() {
-      this.fetchProduct()
+    // id prop'u değiştiğinde ürünü tekrar getir
+    async id() {
+      await this.fetchProduct();
     }
   },
   methods: {
     async fetchProduct() {
       try {
-        this.loading = true
-        this.error = null
-        
-        // Mock API çağrısı - gerçek API ile değiştirilecek
-        await new Promise(resolve => setTimeout(resolve, 800))
-        
-        // Mock data - gerçek API response'u ile değiştirilecek
-        const mockProducts = {
-          1: {
-            id: 1,
-            name: "Altın Yüzük Klasik",
-            category: "Yüzük",
-            price: 2500,
-            image: "https://images.pexels.com/photos/1191531/pexels-photo-1191531.jpeg?auto=compress&cs=tinysrgb&w=800",
-            description: "El işçiliği ile özenle hazırlanmış klasik altın yüzük. 14 ayar altından üretilmiştir.",
-            material: "14 Ayar Altın",
-            weight: "3.2 gram",
-            warranty: "2 Yıl Garanti"
-          },
-          2: {
-            id: 2,
-            name: "Pırlanta Kolye",
-            category: "Kolye",
-            price: 8500,
-            image: "https://images.pexels.com/photos/1458867/pexels-photo-1458867.jpeg?auto=compress&cs=tinysrgb&w=800",
-            description: "Zarif pırlanta kolye, özel günleriniz için mükemmel bir seçim.",
-            material: "18 Ayar Beyaz Altın",
-            weight: "2.8 gram",
-            warranty: "5 Yıl Garanti"
-          },
-          3: {
-            id: 3,
-            name: "Altın Bilezik",
-            category: "Bilezik",
-            price: 3200,
-            image: "https://images.pexels.com/photos/1458867/pexels-photo-1458867.jpeg?auto=compress&cs=tinysrgb&w=800",
-            description: "Şık tasarımıyla göz kamaştıran altın bilezik.",
-            material: "22 Ayar Altın",
-            weight: "5.1 gram",
-            warranty: "3 Yıl Garanti"
-          },
-          4: {
-            id: 4,
-            name: "Pırlanta Küpe",
-            category: "Küpe",
-            price: 4750,
-            image: "https://images.pexels.com/photos/1458867/pexels-photo-1458867.jpeg?auto=compress&cs=tinysrgb&w=800",
-            description: "Işıltılı pırlanta küpeler, zarafetinizi tamamlar.",
-            material: "18 Ayar Beyaz Altın",
-            weight: "1.9 gram",
-            warranty: "5 Yıl Garanti"
-          },
-          5: {
-            id: 5,
-            name: "Altın Set",
-            category: "Set",
-            price: 12000,
-            image: "https://images.pexels.com/photos/1458867/pexels-photo-1458867.jpeg?auto=compress&cs=tinysrgb&w=800",
-            description: "Kolye, küpe ve yüzükten oluşan muhteşem altın set.",
-            material: "18 Ayar Sarı Altın",
-            weight: "12.5 gram",
-            warranty: "5 Yıl Garanti"
-          },
-          6: {
-            id: 6,
-            name: "Vintage Yüzük",
-            category: "Yüzük",
-            price: 6800,
-            image: "https://images.pexels.com/photos/1191531/pexels-photo-1191531.jpeg?auto=compress&cs=tinysrgb&w=800",
-            description: "Antika görünümlü vintage tasarım yüzük.",
-            material: "14 Ayar Rose Altın",
-            weight: "4.3 gram",
-            warranty: "2 Yıl Garanti"
-          }
+        this.loading = true;
+        this.error = null;
+        this.product = null; // Önceki ürünü temizle
+        this.quantity = 1; // Miktarı sıfırla
+        this.addedToCart = false; // Sepete eklendi mesajını sıfırla
+
+        const response = await axios.get(`https://localhost:7135/api/Products/${this.id}`);
+        this.product = response.data;
+
+        // Ürün geldiğinde ilk resmi ana resim olarak ayarla
+        if (this.product && this.product.imageUrls && this.product.imageUrls.length > 0) {
+          this.mainImage = this.product.imageUrls[0];
+        } else {
+          this.mainImage = 'https://via.placeholder.com/500/F8F8F8/C0C0C0?text=Resim+Yok'; // Resim yoksa varsayılan
         }
-        
-        this.product = mockProducts[this.id]
-        
+
         if (!this.product) {
-          this.error = 'Ürün bulunamadı.'
+          this.error = 'Ürün bulunamadı.';
         }
-        
-        // Gerçek API çağrısı böyle olacak:
-        // const response = await fetch(`/api/products/${this.id}`)
-        // this.product = await response.json()
-        
-      } catch (error) {
-        this.error = 'Ürün detayları yüklenirken bir hata oluştu.'
-        console.error('Product fetch error:', error)
+
+      } catch (err) {
+        console.error('Ürün detayları yüklenirken hata oluştu:', err);
+        if (err.response && err.response.status === 404) {
+          this.error = 'Aradığınız ürün bulunamadı.';
+        } else {
+          this.error = 'Ürün detayları yüklenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.';
+        }
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
-    
-    increaseQuantity() {
-      this.quantity++
+
+    setMainImage(imageUrl) {
+      this.mainImage = imageUrl;
     },
-    
+
+    increaseQuantity() {
+      if (this.product && this.quantity < this.product.stockQuantity) {
+        this.quantity++;
+      } else if (this.product && this.product.stockQuantity === 0) {
+        // Stok yoksa artırma işlemi yapma
+      } else {
+        // Eğer stok miktarı tanımlı değilse veya çok büyükse bir limit belirleyebilirsiniz
+        // Şimdilik sadece stok miktarından fazla olmamasına dikkat edelim
+        this.quantity++;
+      }
+    },
+
     decreaseQuantity() {
       if (this.quantity > 1) {
-        this.quantity--
+        this.quantity--;
       }
     },
-    
+
     addToCart() {
-      // localStorage'dan mevcut sepeti al
-      const cart = JSON.parse(localStorage.getItem('cartItems') || '[]')
-      
-      // Ürün zaten sepette var mı kontrol et
-      const existingItem = cart.find(item => item.id === this.product.id)
-      
-      if (existingItem) {
-        // Varsa miktarını artır
-        existingItem.quantity += this.quantity
-      } else {
-        // Yoksa yeni ürün olarak ekle
-        cart.push({
-          id: this.product.id,
-          name: this.product.name,
-          price: this.product.price,
-          image: this.product.image,
-          quantity: this.quantity
-        })
+      if (this.product.stockQuantity === 0) {
+        alert('Bu ürün stokta bulunmamaktadır.');
+        return;
       }
-      
-      // Sepeti localStorage'a kaydet
-      localStorage.setItem('cartItems', JSON.stringify(cart))
-      
-      // Başarı mesajını göster
-      this.addedToCart = true
+
+      const cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+
+      const existingItem = cart.find(item => item.id === this.product.id);
+
+      if (existingItem) {
+        // Stok miktarını aşmamaya dikkat et
+        if (existingItem.quantity + this.quantity > this.product.stockQuantity) {
+          alert(`Bu üründen stokta sadece ${this.product.stockQuantity - existingItem.quantity} adet daha ekleyebilirsiniz.`);
+          existingItem.quantity = this.product.stockQuantity; // Maksimum stoğa çek
+        } else {
+          existingItem.quantity += this.quantity;
+        }
+      } else {
+        // Stok miktarını aşmamaya dikkat et
+        if (this.quantity > this.product.stockQuantity) {
+          alert(`Bu üründen stokta sadece ${this.product.stockQuantity} adet bulunmaktadır.`);
+          this.quantity = this.product.stockQuantity; // Seçili miktarı stoğa çek
+          cart.push({
+            id: this.product.id,
+            name: this.product.name,
+            price: this.product.price,
+            image: this.mainImage,
+            quantity: this.quantity
+          });
+        } else {
+          cart.push({
+            id: this.product.id,
+            name: this.product.name,
+            price: this.product.price,
+            image: this.mainImage,
+            quantity: this.quantity
+          });
+        }
+      }
+
+      localStorage.setItem('cartItems', JSON.stringify(cart));
+
+      this.addedToCart = true;
       setTimeout(() => {
-        this.addedToCart = false
-      }, 3000)
-      
-      // Header'daki sepet sayısını güncelle
-      window.dispatchEvent(new Event('cartUpdated'))
+        this.addedToCart = false;
+      }, 3000);
+
+      window.dispatchEvent(new Event('cartUpdated'));
     },
-    
+
     formatPrice(price) {
-      return new Intl.NumberFormat('tr-TR').format(price)
+      return new Intl.NumberFormat('tr-TR', {
+        style: 'currency',
+        currency: 'TRY',
+        minimumFractionDigits: 0, // Kuruşları gösterme
+        maximumFractionDigits: 0, // Kuruşları gösterme
+      }).format(price);
     }
   }
-}
+};
 </script>
 
 <style scoped>
 .product-detail {
-  padding: 2rem 0;
+  padding: 3rem 0;
   min-height: 80vh;
+  background-color: #f9f9f9;
 }
 
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Loading State */
+.loading-state,
+.error-state,
+.no-product-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  color: #666;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #d4af37;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p,
+.error-state p,
+.no-product-found p {
+  font-size: 1.2rem;
+  margin-top: 15px;
+}
+
+.error-state i,
+.no-product-found i {
+  font-size: 3rem;
+  color: #e74c3c;
+  margin-bottom: 15px;
+}
+
+.no-product-found i {
+  color: #d4af37;
+}
+
+.back-home-btn {
+  margin-top: 20px;
+  background-color: #d4af37;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.back-home-btn:hover {
+  background-color: #c49a2e;
+}
+
+
+/* Product Content */
 .product-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.5fr; /* Resim alanı dar, bilgi alanı geniş */
   gap: 4rem;
-  margin-top: 2rem;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
 }
 
 .product-images {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .main-image {
   width: 100%;
-  max-width: 500px;
-  height: 500px;
-  object-fit: cover;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  max-width: 450px;
+  height: 450px;
+  object-fit: contain; /* Resmi içeriğe sığdırır */
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eee;
+}
+
+.thumbnail-gallery {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap; /* Küçük resimler sığmazsa alt satıra geçsin */
+  justify-content: center;
+}
+
+.thumbnail-image {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid #eee;
+  transition: all 0.2s ease;
+}
+
+.thumbnail-image:hover,
+.thumbnail-image.active {
+  border-color: #d4af37;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .breadcrumb {
   margin-bottom: 1rem;
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.95rem;
+  color: #888;
 }
 
 .breadcrumb a {
   color: #d4af37;
   text-decoration: none;
+  font-weight: 500;
 }
 
 .breadcrumb span {
   margin: 0 0.5rem;
+  color: #bbb;
 }
 
 .product-info h1 {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
   color: #1a1a1a;
+  line-height: 1.2;
 }
 
 .category {
   color: #666;
   font-size: 1.1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
 }
 
 .price {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2.5rem;
+  font-weight: 800;
   color: #d4af37;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  letter-spacing: -0.5px;
 }
 
 .description {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  border-top: 1px solid #eee;
+  padding-top: 2rem;
 }
 
 .description p {
-  font-size: 1.1rem;
-  line-height: 1.8;
-  color: #555;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #444;
 }
 
 .product-specs {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 8px;
+  margin-bottom: 2.5rem;
+  padding: 1.8rem;
+  background: #fdfdfd;
+  border-radius: 10px;
+  border: 1px solid #eee;
 }
 
 .product-specs h3 {
-  margin-bottom: 1rem;
-  color: #1a1a1a;
+  margin-bottom: 1.2rem;
+  color: #333;
+  font-size: 1.4rem;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 0.8rem;
 }
 
 .product-specs ul {
   list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .product-specs li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
   color: #555;
+  font-size: 1rem;
+}
+
+.product-specs li strong {
+  color: #333;
 }
 
 .add-to-cart-section {
   display: flex;
   align-items: center;
   gap: 2rem;
-  margin-bottom: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #eee;
 }
 
 .quantity-selector {
@@ -340,83 +461,166 @@ export default {
   gap: 1rem;
 }
 
+.quantity-selector label {
+  font-weight: 600;
+  color: #333;
+}
+
 .quantity-controls {
   display: flex;
   align-items: center;
-  border: 2px solid #ddd;
+  border: 1px solid #ddd;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .quantity-controls button {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border: none;
-  background: #f8f9fa;
+  background: #f1f1f1;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 600;
-  transition: background 0.2s;
+  color: #333;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .quantity-controls button:hover:not(:disabled) {
-  background: #e9ecef;
+  background: #e0e0e0;
+  color: #1a1a1a;
 }
 
 .quantity-controls button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  background: #fafafa;
 }
 
 .quantity {
-  width: 60px;
+  width: 70px;
   text-align: center;
   font-weight: 600;
-  font-size: 1.1rem;
-  padding: 0 1rem;
+  font-size: 1.2rem;
+  color: #1a1a1a;
+}
+
+.btn {
+  padding: 14px 35px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
 .add-to-cart-btn {
-  padding: 12px 30px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  background-color: #d4af37;
+  color: white;
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+  background-color: #c49a2e;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(212, 175, 55, 0.4);
+}
+
+.add-to-cart-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+  box-shadow: none;
 }
 
 .success-message {
   color: #27ae60;
   font-weight: 600;
-  padding: 1rem;
-  background: #d4edda;
+  padding: 1rem 1.5rem;
+  background: #e6ffe6;
   border-radius: 8px;
-  border-left: 4px solid #27ae60;
+  border-left: 5px solid #27ae60;
+  margin-top: 1.5rem;
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.15);
+}
+
+/* Transitions */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .product-content {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    padding: 2rem;
+  }
+
+  .main-image {
+    max-width: 400px;
+    height: 400px;
+  }
+
+  .product-info h1 {
+    font-size: 2.2rem;
+  }
+
+  .price {
+    font-size: 2rem;
+  }
 }
 
 @media (max-width: 768px) {
+  .product-detail {
+    padding: 2rem 0;
+  }
   .product-content {
-    grid-template-columns: 1fr;
+    padding: 1.5rem;
     gap: 2rem;
   }
-  
   .main-image {
+    max-width: 100%;
     height: 300px;
   }
-  
   .product-info h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
-  
   .price {
     font-size: 1.8rem;
   }
-  
   .add-to-cart-section {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
-  
   .quantity-selector {
     justify-content: center;
+  }
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .thumbnail-gallery {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .thumbnail-image {
+    width: 60px;
+    height: 60px;
+  }
+  .main-image {
+    height: 250px;
   }
 }
 </style>

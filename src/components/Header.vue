@@ -11,9 +11,9 @@
         </button>
 
         <nav :class="['nav', { open: isMobileMenuOpen }]">
-          <router-link to="/" class="nav-link" @click="closeMenu">
+          <a href="#" class="nav-link" @click.prevent="navigate('/')">
             <i class="fas fa-home"></i> Ana Sayfa
-          </router-link>
+          </a>
 
           <div class="dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
             <button class="nav-link dropdown-toggle">
@@ -21,53 +21,53 @@
             </button>
             <transition name="fade">
               <div v-if="showDropdown" class="dropdown-menu">
-                <router-link
+                <a
                   v-for="category in categories"
                   :key="category.id"
-                  :to="`/category/${category.slug}`"
+                  href="#"
                   class="dropdown-item"
-                  @click="closeMenu"
+                  @click.prevent="navigate(`/category/${category.slug}`)"
                 >
                   <i :class="getCategoryIcon(category.slug)"></i> {{ category.name }}
-                </router-link>
+                </a>
               </div>
             </transition>
           </div>
 
-          <router-link to="/cart" class="nav-link cart-link" @click="closeMenu">
+          <a href="#" class="nav-link cart-link" @click.prevent="navigate('/cart')">
             <i class="fas fa-shopping-cart"></i> Sepet
             <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
-          </router-link>
+          </a>
 
-          <router-link to="/login" class="nav-link" @click="closeMenu" v-if="!isLoggedIn">
+          <a href="#" class="nav-link" @click.prevent="navigate('/login')" v-if="!isAuthenticated">
             <i class="fas fa-sign-in-alt"></i> Giriş Yap
-          </router-link>
+          </a>
 
-          <div class="dropdown" @mouseenter="showUserDropdown = true" @mouseleave="showUserDropdown = false" v-else>
+          <div class="dropdown" @mouseenter="showUserDropdown = true" @mouseleave="showUserDropdown = false" v-if="isAuthenticated">
             <button class="nav-link dropdown-toggle">
               <i class="fas fa-user-circle"></i> Hesabım <i class="fas fa-chevron-down"></i>
             </button>
             <transition name="fade">
               <div v-if="showUserDropdown" class="dropdown-menu">
-                <router-link to="/account" class="dropdown-item" @click="closeMenu">
+                <a href="#" class="dropdown-item" @click.prevent="navigate('/account')">
                   <i class="fas fa-user"></i> Profil
-                </router-link>
-                <router-link to="/orders" class="dropdown-item" @click="closeMenu">
+                </a>
+                <a href="#" class="dropdown-item" @click.prevent="navigate('/orders')">
                   <i class="fas fa-box-open"></i> Siparişlerim
-                </router-link>
-                <a href="#" class="dropdown-item" @click="logout">
+                </a>
+                <a href="#" class="dropdown-item" @click.prevent="handleLogout">
                   <i class="fas fa-sign-out-alt"></i> Çıkış Yap
                 </a>
               </div>
             </transition>
           </div>
 
-          <router-link to="/about" class="nav-link" @click="closeMenu">
+          <a href="#" class="nav-link" @click.prevent="navigate('/about')">
             <i class="fas fa-info-circle"></i> Hakkımızda
-          </router-link>
-          <router-link to="/contact" class="nav-link" @click="closeMenu">
+          </a>
+          <a href="#" class="nav-link" @click.prevent="navigate('/contact')">
             <i class="fas fa-envelope"></i> İletişim
-          </router-link>
+          </a>
         </nav>
       </div>
     </div>
@@ -75,7 +75,8 @@
 </template>
 
 <script>
-import axios from 'axios'
+import axios from 'axios';
+import { mapGetters, mapActions } from 'vuex';
 
 export default {
   name: 'Header',
@@ -84,38 +85,65 @@ export default {
       showDropdown: false,
       showUserDropdown: false,
       isMobileMenuOpen: false,
-      isLoggedIn: false,
-      cartItems: [],
+      cartItems: [], // Bu veri hala localStorage'dan çekiyor, API'ye geçiş yapılacak
       categories: []
-    }
+    };
   },
   computed: {
+    ...mapGetters(['isAuthenticated']),
     cartItemCount() {
-      return this.cartItems.reduce((total, item) => total + item.quantity, 0)
+      // Bu kısım sepet API'sine geçiş yaptığınızda Vuex'ten çekilmeli
+      return this.cartItems.reduce((total, item) => total + item.quantity, 0);
     }
   },
   methods: {
+    ...mapActions(['logout']), // Vuex logout action'ı
+    
+    // Tüm yönlendirmeler için merkezi metot
+    navigate(path) {
+      this.$router.push(path);
+      this.closeMenu(); // Menüyü kapat
+    },
+
     async fetchCategories() {
       try {
-        const response = await axios.get('https://localhost:7135/api/Categories')
-        this.categories = response.data
+        const response = await axios.get('https://localhost:7135/api/Categories');
+        this.categories = response.data;
       } catch (error) {
-        console.error('Kategoriler yüklenirken hata:', error)
+        console.error('Kategoriler yüklenirken hata:', error);
+        // Geçici test kategorileri
+        this.categories = [
+          { id: 1, name: 'Altın Takılar', slug: 'altin-takilar' },
+          { id: 2, name: 'Gümüş Takılar', slug: 'gumus-takilar' },
+          { id: 3, name: 'Pırlanta Ürünler', slug: 'pirlanta-urunler' },
+          { id: 4, name: 'Bileklikler', slug: 'bileklikler' },
+          { id: 5, name: 'Kolyeler', slug: 'kolyeler' },
+          { id: 6, name: 'Yüzükler', slug: 'yuzukler' },
+          { id: 7, name: 'Küpeler', slug: 'kupeeler' }
+        ];
       }
     },
+    // Bu metodun API'den sepet verilerini çekecek şekilde güncellenmesi gerekiyor
     updateCartItems() {
-      const cart = JSON.parse(localStorage.getItem('cartItems') || '[]')
-      this.cartItems = cart
+      const cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+      this.cartItems = cart;
     },
     closeMenu() {
-      this.isMobileMenuOpen = false
-      this.showDropdown = false
-      this.showUserDropdown = false
+      this.isMobileMenuOpen = false;
+      this.showDropdown = false;
+      this.showUserDropdown = false;
     },
-    logout() {
-      this.isLoggedIn = false
-      this.closeMenu()
-      this.$router.push('/')
+    async handleLogout() {
+      try {
+        await this.logout(); // Vuex store'dan logout action'ını çağır
+        this.closeMenu();
+        this.$router.push('/'); // Ana sayfaya yönlendir
+        // Başarı mesajı (isteğe bağlı)
+        // this.$toast?.success('Başarıyla çıkış yapıldı');
+      } catch (error) {
+        console.error('Çıkış yapılırken hata:', error);
+        // this.$toast?.error('Çıkış yapılırken bir hata oluştu');
+      }
     },
     getCategoryIcon(slug) {
       const icons = {
@@ -126,19 +154,21 @@ export default {
         'kolyeler': 'fa-necklace',
         'yuzukler': 'fa-ring',
         'kupeeler': 'fa-earrings'
-      }
-      return 'fas ' + (icons[slug] || 'fa-tag')
+      };
+      return 'fas ' + (icons[slug] || 'fa-tag');
     }
   },
   mounted() {
-    this.fetchCategories()
-    this.updateCartItems()
-    window.addEventListener('cartUpdated', this.updateCartItems)
+    this.fetchCategories();
+    // Bu kısımlar sepet API'sine geçiş yaptığınızda Vuex'ten çekilmeli
+    this.updateCartItems();
+    window.addEventListener('cartUpdated', this.updateCartItems);
   },
   beforeUnmount() {
-    window.removeEventListener('cartUpdated', this.updateCartItems)
+    // Bu kısımlar sepet API'sine geçiş yaptığınızda Vuex'ten çekilmeli
+    window.removeEventListener('cartUpdated', this.updateCartItems);
   }
-}
+};
 </script>
 
 <style scoped>
@@ -181,6 +211,7 @@ export default {
   gap: 1.5rem;
 }
 
+/* router-link yerine a etiketlerini kullandığımız için stilleri ona göre güncelliyoruz */
 .nav-link {
   color: #d4af37;
   text-decoration: none;
@@ -189,6 +220,7 @@ export default {
   position: relative;
   transition: color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
+  cursor: pointer; /* A etiketlerine tıklanabilirlik imleci ekledik */
 }
 
 .nav-link:hover {
@@ -274,6 +306,7 @@ export default {
   transition: all 0.2s ease;
   font-size: 0.95rem;
   -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
 
 .dropdown-item:focus {
@@ -419,6 +452,7 @@ button:focus, a:focus {
 button::-moz-focus-inner {
   border: 0;
 }
+
 .nav-link i {
   margin-right: 8px;
   width: 20px;
@@ -441,15 +475,15 @@ button::-moz-focus-inner {
 }
 
 .fa-bracelet:before {
-  content: "\f0c1"; /* Örnek ikon, gerçekte uygun bir ikon bulunmalı */
+  content: "\f0c1";
 }
 
 .fa-necklace:before {
-  content: "\f302"; /* Örnek ikon */
+  content: "\f302";
 }
 
 .fa-earrings:before {
-  content: "\f0c4"; /* Örnek ikon */
+  content: "\f0c4";
 }
 
 /* Responsive düzenlemeler */
