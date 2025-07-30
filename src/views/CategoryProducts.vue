@@ -14,146 +14,111 @@
 
     <div v-else class="product-grid">
       <div
-        v-for="product in filteredProducts"
+        v-for="product in products"
         :key="product.id"
         class="product-card"
         @click="$router.push(`/product/${product.id}`)"
       >
         <div class="product-image">
-          <img :src="product.image" :alt="product.name" />
+          <img :src="product.imageUrl || 'https://via.placeholder.com/300'" :alt="product.name" />
         </div>
         <div class="product-info">
           <h3>{{ product.name }}</h3>
-          <p class="product-price">{{ product.price }} TL</p>
+          <p class="product-price">{{ formatPrice(product.price) }} TL</p>
         </div>
       </div>
     </div>
 
-    <div v-if="filteredProducts.length === 0 && !loading" class="no-products">
+    <div v-if="products.length === 0 && !loading" class="no-products">
+      <i class="fas fa-box-open"></i>
       <p>Bu kategoride henüz ürün bulunmamaktadır.</p>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios'
+
 export default {
   name: "CategoryProducts",
-  props: ["slug"],
+  props: ["slug"], // 'id' prop'unu doğru şekilde aldığınızdan emin olun
   data() {
     return {
       loading: true,
       error: null,
-      allProducts: [],
-      categoryName: "",
-      categories: [
-        { id: 1, name: "Altın Takılar", slug: "altin-takilar" },
-        { id: 2, name: "Gümüş Takılar", slug: "gumus-takilar" },
-        { id: 3, name: "Pırlanta Ürünler", slug: "pirlanta-urunler" },
-        { id: 4, name: "Bileklikler", slug: "bileklikler" },
-        { id: 5, name: "Kolyeler", slug: "kolyeler" },
-        { id: 6, name: "Yüzükler", slug: "yuzukler" },
-        { id: 7, name: "Küpeler", slug: "kupeeler" },
-      ],
+      products: [],
+      categoryName: "", // Kategori adı, getirilen veriye göre ayarlanacak
+      category: null
     };
   },
-  computed: {
-    filteredProducts() {
-      return this.allProducts.filter(
-        (product) => product.category && product.category.slug === this.slug
-      );
-    },
-  },
   async created() {
-    try {
-      await this.fetchMockProducts();
-
-      const category = this.categories.find((c) => c.slug === this.slug);
-      this.categoryName = category ? category.name : "Kategori";
-
-      if (this.filteredProducts.length === 0) {
-        const categoryExists = this.categories.some(
-          (c) => c.slug === this.slug
-        );
-        if (!categoryExists) {
-          this.error = "Geçersiz kategori";
-        }
-      }
-    } catch (err) {
-      this.error = "Ürünler yüklenirken bir hata oluştu";
-      console.error(err);
-    } finally {
-      this.loading = false;
-    }
+    // Bileşen ilk oluşturulduğunda verileri getir
+    // await this.fetchCategoryData(); // Kategori detaylarını getir
+    await this.fetchProducts();     // O kategoriye ait ürünleri getir
   },
   methods: {
-    async fetchMockProducts() {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+    // async fetchCategoryData() {
+    //   try {
+    //     // ID prop'unu kullanarak kategori detaylarını getir
+    //     const response = await axios.get(`https://localhost:7135/api/Categories/${this.id}`);
+    //     this.category = response.data;
+    //     this.categoryName = this.category.name;
+    //     this.error = null; // Önceki hataları temizle
+    //   } catch (error) {
+    //     console.error('Kategori bilgisi alınırken hata:', error);
+    //     this.error = "Kategori bulunamadı veya bir hata oluştu.";
+    //     this.categoryName = "Bilinmeyen Kategori"; // Varsayılan bir ad belirle
+    //   }
+    // },
+    async fetchProducts() {
+      this.loading = true; // Ürünleri getirmeden önce yükleniyor durumunu aç
+      this.error = null;   // Ürünlerle ilgili önceki hataları temizle
 
-      this.allProducts = [
-        {
-          id: 1,
-          name: "Klasik Altın Yüzük",
-          price: 2500,
-          image:
-            "https://images.pexels.com/photos/1191531/pexels-photo-1191531.jpeg",
-          category: { slug: "altin-takilar", name: "Altın Takılar" },
-        },
-        {
-          id: 2,
-          name: "Gümüş Bileklik",
-          price: 850,
-          image:
-            "https://images.pexels.com/photos/3266703/pexels-photo-3266703.jpeg",
-          category: { slug: "gumus-takilar", name: "Gümüş Takılar" },
-        },
-        {
-          id: 3,
-          name: "Pırlanta Kolye",
-          price: 4500,
-          image:
-            "https://images.pexels.com/photos/3266700/pexels-photo-3266700.jpeg",
-          category: { slug: "pirlanta-urunler", name: "Pırlanta Ürünler" },
-        },
-        {
-          id: 4,
-          name: "Deri Bileklik",
-          price: 350,
-          image:
-            "https://images.pexels.com/photos/3266701/pexels-photo-3266701.jpeg",
-          category: { slug: "bileklikler", name: "Bileklikler" },
-        },
-        {
-          id: 5,
-          name: "Altın Kolye",
-          price: 3200,
-          image:
-            "https://images.pexels.com/photos/3266702/pexels-photo-3266702.jpeg",
-          category: { slug: "kolyeler", name: "Kolyeler" },
-        },
-        {
-          id: 6,
-          name: "Elmas Yüzük",
-          price: 7800,
-          image:
-            "https://images.pexels.com/photos/1191532/pexels-photo-1191532.jpeg",
-          category: { slug: "yuzukler", name: "Yüzükler" },
-        },
-        {
-          id: 7,
-          name: "Altın Küpe",
-          price: 1850,
-          image:
-            "https://images.pexels.com/photos/3266704/pexels-photo-3266704.jpeg",
-          category: { slug: "kupeeler", name: "Küpeler" },
-        },
-      ];
+      try {
+        const response = await axios.get(`https://localhost:7135/api/Products/category/slug/${this.slug}`);
+        this.products = response.data;
+        console.log("kategoriye göre alınan ürünler", response.data);
+      } catch (error) {
+        console.error('Ürünler alınırken hata:', error);
+        this.error = "Ürünler yüklenirken bir hata oluştu.";
+      } finally {
+        this.loading = false; // Veri alma işlemi bittikten sonra (başarılı veya hatalı) yükleniyor durumunu kapat
+      }
     },
+    formatPrice(price) {
+      return new Intl.NumberFormat('tr-TR').format(price);
+    }
   },
+  watch: {
+    // 'id' prop'undaki değişiklikleri izle
+    async slug(newId, oldId) {
+      if (newId !== oldId) { // Sadece ID gerçekten değiştiyse yeniden getir
+        this.loading = true;
+        this.error = null;
+        this.products = []; // Eski ürünleri hemen temizleyerek daha iyi bir kullanıcı deneyimi sağla
+        this.categoryName = ""; // Eski kategori adını temizle
+        // await this.fetchCategoryData(); // Yeni kategori verilerini getir
+        await this.fetchProducts();     // Yeni ürünleri getir
+      }
+    }
+  }
 };
 </script>
 
 <style scoped>
-/* Ürün grid ve kart stilleri buraya gelecek */
+.category-products {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h2 {
+  text-align: center;
+  color: #1a1a1a;
+  margin-bottom: 2rem;
+  font-family: 'Playfair Display', serif;
+}
+
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -172,6 +137,7 @@ export default {
 
 .product-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .product-image {
@@ -183,6 +149,11 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.05);
 }
 
 .product-info {
@@ -192,11 +163,13 @@ export default {
 .product-info h3 {
   margin: 0 0 10px;
   font-size: 1.1rem;
+  color: #333;
 }
 
 .product-price {
   font-weight: bold;
   color: #d4af37;
+  font-size: 1.2rem;
 }
 
 .loading,
@@ -204,6 +177,26 @@ export default {
 .no-products {
   text-align: center;
   padding: 50px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading p,
+.error p,
+.no-products p {
+  margin-top: 15px;
+  color: #666;
+}
+
+.error i {
+  color: #e74c3c;
+  font-size: 2rem;
+}
+
+.no-products i {
+  color: #d4af37;
+  font-size: 2rem;
 }
 
 .spinner {
@@ -222,6 +215,16 @@ export default {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+  
+  h2 {
+    font-size: 1.5rem;
   }
 }
 </style>

@@ -76,6 +76,7 @@
 
 <script>
 import axios from 'axios'
+
 export default {
   name: 'Header',
   data() {
@@ -83,7 +84,7 @@ export default {
       showDropdown: false,
       showUserDropdown: false,
       isMobileMenuOpen: false,
-      isLoggedIn: false, // Gerçek uygulamada bu değer auth durumuna göre ayarlanmalı
+      isLoggedIn: false,
       cartItems: [],
       categories: []
     }
@@ -94,13 +95,12 @@ export default {
     }
   },
   methods: {
-    async fetchCategories(){
+    async fetchCategories() {
       try {
-        const response = await axios.get(`https://localhost:7135/api/Categories`);
-        this.categories = response.data;
-        console.log(response.data);
+        const response = await axios.get('https://localhost:7135/api/Categories')
+        this.categories = response.data
       } catch (error) {
-        console.log(error)
+        console.error('Kategoriler yüklenirken hata:', error)
       }
     },
     updateCartItems() {
@@ -113,7 +113,6 @@ export default {
       this.showUserDropdown = false
     },
     logout() {
-      // Çıkış yapma işlemleri
       this.isLoggedIn = false
       this.closeMenu()
       this.$router.push('/')
@@ -135,8 +134,6 @@ export default {
     this.fetchCategories()
     this.updateCartItems()
     window.addEventListener('cartUpdated', this.updateCartItems)
-    // Gerçek uygulamada auth durumu kontrol edilmeli
-    // this.checkAuthStatus()
   },
   beforeUnmount() {
     window.removeEventListener('cartUpdated', this.updateCartItems)
