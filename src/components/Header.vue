@@ -1,23 +1,25 @@
 <template>
-  <header class="header">
+  <header class="main-header">
     <div class="container">
-      <div class="header-content">
-        <router-link to="/" class="logo">
-          <h1>✨ Altın Kuyumcu</h1>
+      <div class="header-inner">
+        <router-link to="/" class="brand-logo">
+          <h1>✨ BOM Altın Kuyumcu</h1>
         </router-link>
 
-        <button class="hamburger" @click="isMobileMenuOpen = !isMobileMenuOpen">
-          <span :class="{ open: isMobileMenuOpen }"></span>
+        <button class="hamburger-menu" @click="toggleMobileMenu">
+          <span :class="{ 'is-active': isMobileMenuOpen }"></span>
+          <span :class="{ 'is-active': isMobileMenuOpen }"></span>
+          <span :class="{ 'is-active': isMobileMenuOpen }"></span>
         </button>
 
-        <nav :class="['nav', { open: isMobileMenuOpen }]">
-          <a href="#" class="nav-link" @click.prevent="navigate('/')">
-            <i class="fas fa-home"></i> Ana Sayfa
+        <nav :class="['main-nav', { 'is-open': isMobileMenuOpen }]">
+          <a href="#" class="nav-item" @click.prevent="navigate('/')">
+            <i class="fas fa-home nav-icon"></i> Ana Sayfa
           </a>
 
-          <div class="dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
-            <button class="nav-link dropdown-toggle">
-              <i class="fas fa-list"></i> Kategoriler <i class="fas fa-chevron-down"></i>
+          <div class="nav-dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
+            <button class="nav-item dropdown-toggle">
+              <i class="fas fa-list nav-icon"></i> Kategoriler <i class="fas fa-chevron-down dropdown-arrow"></i>
             </button>
             <transition name="fade">
               <div v-if="showDropdown" class="dropdown-menu">
@@ -28,45 +30,45 @@
                   class="dropdown-item"
                   @click.prevent="navigate(`/category/${category.slug}`)"
                 >
-                  <i :class="getCategoryIcon(category.slug)"></i> {{ category.name }}
+                  <i :class="getCategoryIcon(category.slug)" class="dropdown-icon"></i> {{ category.name }}
                 </a>
               </div>
             </transition>
           </div>
 
-          <a href="#" class="nav-link cart-link" @click.prevent="navigate('/cart')">
-            <i class="fas fa-shopping-cart"></i> Sepet
+          <a href="#" class="nav-item cart-link" @click.prevent="navigate('/cart')">
+            <i class="fas fa-shopping-cart nav-icon"></i> Sepet
             <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
           </a>
 
-          <a href="#" class="nav-link" @click.prevent="navigate('/login')" v-if="!isAuthenticated">
-            <i class="fas fa-sign-in-alt"></i> Giriş Yap
+          <a href="#" class="nav-item" @click.prevent="navigate('/login')" v-if="!isAuthenticated">
+            <i class="fas fa-sign-in-alt nav-icon"></i> Giriş Yap
           </a>
 
-          <div class="dropdown" @mouseenter="showUserDropdown = true" @mouseleave="showUserDropdown = false" v-if="isAuthenticated">
-            <button class="nav-link dropdown-toggle">
-              <i class="fas fa-user-circle"></i> Hesabım <i class="fas fa-chevron-down"></i>
+          <div class="nav-dropdown" @mouseenter="showUserDropdown = true" @mouseleave="showUserDropdown = false" v-if="isAuthenticated">
+            <button class="nav-item dropdown-toggle">
+              <i class="fas fa-user-circle nav-icon"></i> Hesabım <i class="fas fa-chevron-down dropdown-arrow"></i>
             </button>
             <transition name="fade">
               <div v-if="showUserDropdown" class="dropdown-menu">
                 <a href="#" class="dropdown-item" @click.prevent="navigate('/account')">
-                  <i class="fas fa-user"></i> Profil
+                  <i class="fas fa-user dropdown-icon"></i> Profil
                 </a>
                 <a href="#" class="dropdown-item" @click.prevent="navigate('/orders')">
-                  <i class="fas fa-box-open"></i> Siparişlerim
+                  <i class="fas fa-box-open dropdown-icon"></i> Siparişlerim
                 </a>
-                <a href="#" class="dropdown-item" @click.prevent="handleLogout">
-                  <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                <a href="#" class="dropdown-item logout-item" @click.prevent="handleLogout">
+                  <i class="fas fa-sign-out-alt dropdown-icon"></i> Çıkış Yap
                 </a>
               </div>
             </transition>
           </div>
 
-          <a href="#" class="nav-link" @click.prevent="navigate('/about')">
-            <i class="fas fa-info-circle"></i> Hakkımızda
+          <a href="#" class="nav-item" @click.prevent="navigate('/about')">
+            <i class="fas fa-info-circle nav-icon"></i> Hakkımızda
           </a>
-          <a href="#" class="nav-link" @click.prevent="navigate('/contact')">
-            <i class="fas fa-envelope"></i> İletişim
+          <a href="#" class="nav-item" @click.prevent="navigate('/contact')">
+            <i class="fas fa-envelope nav-icon"></i> İletişim
           </a>
         </nav>
       </div>
@@ -84,25 +86,32 @@ export default {
     return {
       showDropdown: false,
       showUserDropdown: false,
-      isMobileMenuOpen: false,
-      cartItems: [], // Bu veri hala localStorage'dan çekiyor, API'ye geçiş yapılacak
+      isMobileMenuOpen: false, // Mobil menü açık mı kapalı mı
       categories: []
     };
   },
   computed: {
-    ...mapGetters(['isAuthenticated']),
-    cartItemCount() {
-      // Bu kısım sepet API'sine geçiş yaptığınızda Vuex'ten çekilmeli
-      return this.cartItems.reduce((total, item) => total + item.quantity, 0);
-    }
+    ...mapGetters(['isAuthenticated', 'cartItemCount']),
   },
   methods: {
-    ...mapActions(['logout']), // Vuex logout action'ı
+    ...mapActions(['logout', 'fetchCartDetails']),
     
-    // Tüm yönlendirmeler için merkezi metot
     navigate(path) {
       this.$router.push(path);
-      this.closeMenu(); // Menüyü kapat
+      this.closeMenus(); // Tüm menüleri kapat
+    },
+
+    toggleMobileMenu() {
+      this.isMobileMenuOpen = !this.isMobileMenuOpen;
+      if (!this.isMobileMenuOpen) {
+        this.closeMenus(); // Mobil menü kapatıldığında alt menüleri de kapat
+      }
+    },
+
+    closeMenus() {
+      this.isMobileMenuOpen = false;
+      this.showDropdown = false;
+      this.showUserDropdown = false;
     },
 
     async fetchCategories() {
@@ -111,7 +120,6 @@ export default {
         this.categories = response.data;
       } catch (error) {
         console.error('Kategoriler yüklenirken hata:', error);
-        // Geçici test kategorileri
         this.categories = [
           { id: 1, name: 'Altın Takılar', slug: 'altin-takilar' },
           { id: 2, name: 'Gümüş Takılar', slug: 'gumus-takilar' },
@@ -123,26 +131,13 @@ export default {
         ];
       }
     },
-    // Bu metodun API'den sepet verilerini çekecek şekilde güncellenmesi gerekiyor
-    updateCartItems() {
-      const cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
-      this.cartItems = cart;
-    },
-    closeMenu() {
-      this.isMobileMenuOpen = false;
-      this.showDropdown = false;
-      this.showUserDropdown = false;
-    },
     async handleLogout() {
       try {
-        await this.logout(); // Vuex store'dan logout action'ını çağır
-        this.closeMenu();
-        this.$router.push('/'); // Ana sayfaya yönlendir
-        // Başarı mesajı (isteğe bağlı)
-        // this.$toast?.success('Başarıyla çıkış yapıldı');
+        await this.logout();
+        this.closeMenus();
+        this.$router.push('/');
       } catch (error) {
         console.error('Çıkış yapılırken hata:', error);
-        // this.$toast?.error('Çıkış yapılırken bir hata oluştu');
       }
     },
     getCategoryIcon(slug) {
@@ -150,117 +145,138 @@ export default {
         'altin-takilar': 'fa-gem',
         'gumus-takilar': 'fa-ring',
         'pirlanta-urunler': 'fa-diamond',
-        'bileklikler': 'fa-bracelet',
-        'kolyeler': 'fa-necklace',
+        'bileklikler': 'fa-bracelet', // Font Awesome 5'te bu ikonlar olmayabilir, kontrol edin.
+        'kolyeler': 'fa-necklace',   // Varsayılan olarak fa-tag döner
         'yuzukler': 'fa-ring',
-        'kupeeler': 'fa-earrings'
+        'kupeeler': 'fa-earrings'    // Varsayılan olarak fa-tag döner
       };
+      // Eğer Font Awesome Pro kullanmıyorsanız veya bu özel ikonlar yoksa,
+      // `fas` yerine `fa` veya `far` kullanabilirsiniz. Ya da ortak bir ikon atayabilirsiniz.
       return 'fas ' + (icons[slug] || 'fa-tag');
     }
   },
-  mounted() {
+  async mounted() {
     this.fetchCategories();
-    // Bu kısımlar sepet API'sine geçiş yaptığınızda Vuex'ten çekilmeli
-    this.updateCartItems();
-    window.addEventListener('cartUpdated', this.updateCartItems);
-  },
-  beforeUnmount() {
-    // Bu kısımlar sepet API'sine geçiş yaptığınızda Vuex'ten çekilmeli
-    window.removeEventListener('cartUpdated', this.updateCartItems);
+    try {
+        await this.fetchCartDetails();
+    } catch (error) {
+        console.error('Headerda sepet detayları yüklenirken hata:', error);
+    }
   }
 };
 </script>
 
 <style scoped>
-.header {
-  background: white;
-  color: #d4af37;
+/* Font Awesome ikonları için - BU SATIR EN ÜSTE TAŞINDI */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+/* Genel Yapı ve Sıfırlamalar */
+.main-header {
+  background: #ffffff; /* Parlak beyaz */
   padding: 1rem 0;
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Daha belirgin gölge */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Daha modern font */
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1280px; /* Daha geniş alan */
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1.5rem; /* Yan boşlukları artır */
 }
 
-.header-content {
+.header-inner {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.logo {
+/* Logo */
+.brand-logo {
   text-decoration: none;
-  color: #d4af37;
-}
-
-.logo h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.nav {
+  color: #d4af37; /* Altın rengi */
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.5rem;
 }
 
-/* router-link yerine a etiketlerini kullandığımız için stilleri ona göre güncelliyoruz */
-.nav-link {
-  color: #d4af37;
+.brand-logo h1 {
+  font-size: 1.9rem; /* Biraz büyüdü */
+  font-weight: 800; /* Daha kalın */
+  margin: 0;
+  letter-spacing: -0.5px; /* Hafifçe sıkıştır */
+}
+
+/* Navigasyon Menüsü */
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.8rem; /* Nav öğeleri arası boşluk */
+}
+
+.nav-item {
+  color: #333; /* Koyu gri, okunabilir */
   text-decoration: none;
-  font-weight: 500;
-  padding: 0.5rem 0;
+  font-weight: 600; /* Biraz kalın */
+  padding: 0.6rem 0;
   position: relative;
-  transition: color 0.2s ease;
-  -webkit-tap-highlight-color: transparent;
-  cursor: pointer; /* A etiketlerine tıklanabilirlik imleci ekledik */
+  transition: all 0.3s ease; /* Daha yumuşak geçiş */
+  cursor: pointer;
+  display: flex; /* İkon ve metin için flex */
+  align-items: center;
+  user-select: none; /* Metin seçimi engelle */
 }
 
-.nav-link:hover {
-  color: black;
+.nav-item:hover {
+  color: #d4af37; /* Hover'da altın rengi */
 }
 
-.nav-link:hover::after {
+.nav-item::after {
   content: '';
   position: absolute;
-  bottom: 0;
+  bottom: -3px; /* Alt çizginin yeri */
   left: 0;
   width: 100%;
   height: 2px;
   background: #d4af37;
-  animation: underline 0.3s ease forwards;
+  transform: scaleX(0); /* Başlangıçta gizli */
+  transition: transform 0.3s ease;
 }
 
-@keyframes underline {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+.nav-item:hover::after {
+  transform: scaleX(1); /* Hover'da belirsin */
 }
 
+.nav-icon {
+  margin-right: 0.5rem; /* İkon ile metin arası boşluk */
+  font-size: 1.1rem;
+}
+
+/* Sepet Rozeti */
 .cart-link {
   position: relative;
 }
 
 .cart-badge {
   position: absolute;
-  top: -8px;
-  right: -10px;
-  background: #d4af37;
-  color: black;
+  top: -10px; /* Biraz daha yukarı */
+  right: -12px; /* Biraz daha sağa */
+  background: #e74c3c; /* Canlı kırmızı */
+  color: white;
   border-radius: 50%;
-  padding: 2px 6px;
-  font-size: 0.75rem;
+  padding: 3px 7px; /* Boyutunu ayarla */
+  font-size: 0.7rem;
   font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Hafif gölge */
+  min-width: 22px; /* Tek haneli sayılar için */
+  text-align: center;
+  line-height: 1;
 }
 
-/* Dropdown */
-.dropdown {
+/* Dropdown Menü */
+.nav-dropdown {
   position: relative;
 }
 
@@ -271,7 +287,9 @@ export default {
   padding: 0;
   font: inherit;
   color: inherit;
-  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  user-select: none;
 }
 
 .dropdown-toggle:focus {
@@ -279,124 +297,121 @@ export default {
   box-shadow: none;
 }
 
+.dropdown-arrow {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.nav-dropdown:hover .dropdown-arrow {
+  transform: rotate(180deg); /* Açılırken dönsün */
+}
+
 .dropdown-menu {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 10px); /* Nav öğesinin biraz altına in */
   left: 0;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  padding: 0.5rem 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Daha belirgin gölge */
+  padding: 0.8rem 0;
   z-index: 999;
-  min-width: 200px;
-  transform-origin: top center;
-  animation: fadeIn 0.2s ease-out forwards;
+  min-width: 220px;
+  transform-origin: top; /* Üstten açılma animasyonu */
+  animation: dropdownFadeIn 0.3s ease-out forwards;
+  opacity: 0; /* Başlangıçta gizli */
+  transform: translateY(-10px); /* Başlangıçta hafif yukarıda */
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-10px) scaleY(0.9); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
 }
 
 .dropdown-item {
-  display: block;
-  padding: 0.75rem 1.5rem;
-  color: #333;
+  display: flex; /* İkon ve metin için flex */
+  align-items: center;
+  padding: 0.8rem 1.5rem;
+  color: #555; /* Açık gri */
   text-decoration: none;
   transition: all 0.2s ease;
   font-size: 0.95rem;
-  -webkit-tap-highlight-color: transparent;
-  cursor: pointer;
+  user-select: none;
 }
 
-.dropdown-item:focus {
-  outline: none;
-  background: rgba(212, 175, 55, 0.1);
+.dropdown-icon {
+  margin-right: 0.8rem;
+  font-size: 1rem;
+  width: 20px; /* İkonlar için sabit genişlik */
+  text-align: center;
 }
 
 .dropdown-item:hover {
   color: #d4af37;
-  background: rgba(212, 175, 55, 0.1);
-  padding-left: 1.75rem;
+  background: rgba(212, 175, 55, 0.08); /* Hafif altın rengi arka plan */
+  padding-left: 1.8rem; /* Hafif kayma efekti */
 }
 
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.2s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
+.dropdown-item.logout-item {
+    border-top: 1px solid #eee; /* Çıkış yap butonu için ayırıcı */
+    margin-top: 0.5rem;
+    padding-top: 1rem;
 }
 
-/* Hamburger */
-.hamburger {
-  display: none;
+/* Hamburger Menü (Mobil) */
+.hamburger-menu {
+  display: none; /* Varsayılan olarak gizli */
   flex-direction: column;
   justify-content: space-between;
-  width: 24px;
-  height: 18px;
+  width: 30px; /* Boyutunu büyüt */
+  height: 22px;
   background: none;
   border: none;
   cursor: pointer;
   position: relative;
-  z-index: 1001;
-  -webkit-tap-highlight-color: transparent;
+  z-index: 1001; /* Navigasyonun üstünde */
+  padding: 0;
 }
 
-.hamburger:focus {
-  outline: none;
-}
-
-.hamburger span,
-.hamburger span::before,
-.hamburger span::after {
-  content: '';
+.hamburger-menu span {
   display: block;
-  background: #d4af37;
-  height: 3px;
-  border-radius: 2px;
-  transition: 0.3s ease;
-  position: relative;
-}
-
-.hamburger span.open {
-  background: transparent;
-}
-
-.hamburger span.open::before {
-  transform: rotate(45deg);
-  top: 0;
-}
-
-.hamburger span.open::after {
-  transform: rotate(-45deg);
-  top: 0;
-}
-
-.hamburger span::before,
-.hamburger span::after {
-  content: '';
-  position: absolute;
-  left: 0;
   width: 100%;
   height: 3px;
   background: #d4af37;
+  border-radius: 2px;
+  transition: all 0.3s ease-in-out;
+  transform-origin: center center;
 }
 
-.hamburger span::before {
-  top: -8px;
+.hamburger-menu span:nth-child(1) { transform-origin: top left; }
+.hamburger-menu span:nth-child(3) { transform-origin: bottom left; }
+
+
+.hamburger-menu span.is-active:nth-child(1) {
+  transform: translateY(9px) rotate(45deg);
 }
 
-.hamburger span::after {
-  top: 8px;
+.hamburger-menu span.is-active:nth-child(2) {
+  opacity: 0; /* Orta çizgi kaybolur */
 }
 
-/* Responsive */
-@media screen and (max-width: 768px) {
-  .hamburger {
-    display: flex;
+.hamburger-menu span.is-active:nth-child(3) {
+  transform: translateY(-9px) rotate(-45deg);
+}
+
+/* Responsive Tasarım */
+@media screen and (max-width: 992px) { /* Tablet boyutları için breakpoint */
+  .main-nav {
+    gap: 1.2rem;
+  }
+}
+
+@media screen and (max-width: 768px) { /* Mobil boyutları için breakpoint */
+  .hamburger-menu {
+    display: flex; /* Mobilde görünür */
   }
 
-  .nav {
+  .main-nav {
     position: fixed;
     top: 0;
     left: 0;
@@ -409,92 +424,99 @@ export default {
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    display: none;
-    z-index: 1000;
+    display: flex; /* Default olarak esnek */
+    transform: translateX(100%); /* Başlangıçta sağdan gizli */
+    transition: transform 0.4s ease-in-out;
+    opacity: 0; /* Başlangıçta gizli */
+    pointer-events: none; /* Tıklamayı engelle */
   }
 
-  .nav.open {
-    display: flex;
+  .main-nav.is-open {
+    transform: translateX(0%); /* Açıkken görünür */
+    opacity: 1; /* Görünür hale gel */
+    pointer-events: all; /* Tıklamayı etkinleştir */
   }
 
-  .nav-link {
-    font-size: 1.2rem;
-    margin: 0.5rem 0;
+  .nav-item {
+    font-size: 1.4rem; /* Mobil menüde büyüt */
+    margin: 0.8rem 0;
     color: #333;
+    width: 100%; /* Tüm genişliği kapla */
+    text-align: center;
+    justify-content: center; /* Ortala */
+    padding: 1rem 0;
+  }
+
+  .nav-item::after {
+    bottom: -5px;
+  }
+
+  .nav-icon {
+    font-size: 1.3rem;
+  }
+
+  /* Mobil Dropdownlar */
+  .nav-dropdown {
+    width: 100%;
+    text-align: center;
+  }
+
+  .dropdown-toggle {
+    width: 100%;
+    justify-content: center;
   }
 
   .dropdown-menu {
-    position: static;
+    position: static; /* Statik konum */
     box-shadow: none;
-    background: transparent;
-    padding: 0;
+    background: #f8f8f8; /* Hafif gri arka plan */
+    padding: 0.5rem 0;
     animation: none;
+    opacity: 1; /* Her zaman görünür */
+    transform: none;
+    width: 90%; /* Mobil cihazda biraz daralt */
+    margin: 0 auto 1rem auto; /* Üstten ve alttan boşluk */
+    border-radius: 8px;
   }
 
   .dropdown-item {
-    color: #555;
-    padding: 0.75rem 1rem;
+    padding: 0.7rem 1rem;
+    font-size: 1.1rem;
+    justify-content: center; /* Ortala */
   }
 
   .dropdown-item:hover {
-    color: #d4af37;
-    background: transparent;
-    padding-left: 1rem;
+    padding-left: 1rem; /* Kayma efektini kaldır */
+  }
+  .dropdown-icon {
+    margin-right: 0.5rem; /* Mobil ikon boşluğu */
+  }
+
+  .logout-item {
+      border-top: none; /* Mobilde ayırıcıyı kaldır */
+      margin-top: 0;
+      padding-top: 0.7rem;
   }
 }
 
-/* Tüm focus outline'ları kaldırma */
-button:focus, a:focus {
-  outline: none;
-}
-
-/* Firefox için */
-button::-moz-focus-inner {
-  border: 0;
-}
-
-.nav-link i {
-  margin-right: 8px;
-  width: 20px;
-  text-align: center;
-}
-
-.dropdown-item i {
-  margin-right: 10px;
-  width: 20px;
-  text-align: center;
-}
-
-/* Font Awesome ikonları için */
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
-
 /* Özel ikonlar için (eğer kullanılıyorsa) */
+/* Font Awesome 5 Free sürümleri bazı ikonları içermeyebilir,
+   bu durumda bu kurallar işe yaramayabilir.
+   Gerekirse Font Awesome Pro'ya geçiş yapabilir veya farklı ikon kütüphaneleri kullanabilirsiniz. */
 @font-face {
-  font-family: 'Custom Icons';
+  font-family: 'Custom Icons'; /* Eğer özel ikon fontunuz varsa */
   src: url('path/to/custom-icons.woff2') format('woff2');
 }
 
 .fa-bracelet:before {
-  content: "\f0c1";
+  content: "\f0c1"; /* Bu kodlar Font Awesome'a özeldir. Eğer FA pro değilse çalışmaz. */
 }
 
 .fa-necklace:before {
-  content: "\f302";
+  content: "\f302"; /* Bu kodlar Font Awesome'a özeldir. Eğer FA pro değilse çalışmaz. */
 }
 
 .fa-earrings:before {
-  content: "\f0c4";
-}
-
-/* Responsive düzenlemeler */
-@media screen and (max-width: 768px) {
-  .nav-link i {
-    margin-right: 12px;
-    font-size: 1.2rem;
-  }
-  
-  .dropdown-item i {
-    margin-right: 15px;
-  }
+  content: "\f0c4"; /* Bu kodlar Font Awesome'a özeldir. Eğer FA pro değilse çalışmaz. */
 }
 </style>

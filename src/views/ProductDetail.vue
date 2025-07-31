@@ -9,6 +9,7 @@
       <div v-else-if="error" class="error-state">
         <i class="fas fa-exclamation-circle"></i>
         <p>{{ error }}</p>
+        <router-link to="/" class="btn back-home-btn">Ana Sayfaya Dön</router-link>
       </div>
 
       <div v-else-if="product" class="product-content">
@@ -42,20 +43,17 @@
 
           <h1>{{ product.name }}</h1>
           <p class="category">{{ product.categoryName }}</p>
-
           <div class="price">{{ formatPrice(product.price) }} TL</div>
-
           <div class="description">
             <p>{{ product.description || 'Bu ürün hakkında detaylı açıklama bulunmamaktadır.' }}</p>
           </div>
-
           <div class="product-specs">
             <h3>Ürün Özellikleri</h3>
             <ul>
               <li v-if="product.material"><strong>Malzeme:</strong> {{ product.material }}</li>
-              <li v-if="product.weight !== undefined && product.weight !== null"><strong>Ağırlık:</strong> {{ product.weight }} gram</li>
+              <li v-if="product.weight !== undefined"><strong>Ağırlık:</strong> {{ product.weight }} gram</li>
               <li v-if="product.sku"><strong>SKU:</strong> {{ product.sku }}</li>
-              <li v-if="product.stockQuantity !== undefined && product.stockQuantity !== null"><strong>Stok Durumu:</strong> {{ product.stockQuantity > 0 ? 'Stokta Var' : 'Tükendi' }}</li>
+              <li v-if="product.stockQuantity !== undefined"><strong>Stok Durumu:</strong> {{ product.stockQuantity > 0 ? 'Stokta Var' : 'Tükendi' }}</li>
             </ul>
           </div>
 
@@ -68,18 +66,12 @@
                 <button @click="increaseQuantity" :disabled="quantity >= product.stockQuantity">+</button>
               </div>
             </div>
-
             <button @click="addToCart" class="btn add-to-cart-btn" :disabled="product.stockQuantity === 0">
               <i class="fas fa-shopping-cart"></i> Sepete Ekle
             </button>
           </div>
-
-          <transition name="fade">
-            <div v-if="addedToCart" class="success-message">
-              ✅ Ürün sepete eklendi!
-            </div>
-          </transition>
-        </div>
+          
+          </div>
       </div>
       <div v-else class="no-product-found">
         <i class="fas fa-box-open"></i>
@@ -87,11 +79,25 @@
         <router-link to="/" class="btn back-home-btn">Ana Sayfaya Dön</router-link>
       </div>
     </div>
+
+    <transition name="toast-slide-fade">
+      <div v-if="showToast" :class="['app-toast', toastType]">
+        <div class="toast-icon">
+          <i :class="toastType === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'"></i>
+        </div>
+        <div class="toast-content">
+          <strong class="toast-title">{{ toastTitle }}</strong>
+          <span class="toast-message">{{ toastMessage }}</span>
+        </div>
+        <router-link v-if="toastType === 'success'" to="/cart" class="toast-action-btn">Sepete Git</router-link>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import { mapActions, mapGetters } from 'vuex';
 
 export default {
   name: 'ProductDetail',
@@ -102,42 +108,61 @@ export default {
       loading: true,
       error: null,
       quantity: 1,
-      addedToCart: false,
-      mainImage: 'https://via.placeholder.com/500/F8F8F8/C0C0C0?text=Resim+Yok' // Varsayılan resim
+      mainImage: 'https://via.placeholder.com/500/F8F8F8/C0C0C0?text=Resim+Yok',
+      apiBaseUrl: 'https://localhost:7135',
+      // GÜNCELLENDİ: 'addedToCart' kaldırıldı, Toast state'leri zaten mevcut ve doğru.
+      showToast: false,
+      toastType: 'success',
+      toastTitle: '',
+      toastMessage: ''
     };
   },
+  computed: {
+    ...mapGetters(['cartItems'])
+  },
   async created() {
-    // Component oluşturulduğunda ve id değiştiğinde çalışır
     await this.fetchProduct();
+    await this.fetchCartDetails();
   },
   watch: {
-    // id prop'u değiştiğinde ürünü tekrar getir
     async id() {
       await this.fetchProduct();
+      await this.fetchCartDetails();
     }
   },
   methods: {
+    ...mapActions(['addItemToCart', 'fetchCartDetails']),
+    
+    // Toast (bildirim) gösterme metodu (Bu zaten doğruydu)
+    showAppToast(type, title, message) {
+      this.toastType = type;
+      this.toastTitle = title;
+      this.toastMessage = message;
+      this.showToast = true;
+      setTimeout(() => {
+        this.showToast = false;
+      }, 3500);
+    },
+
     async fetchProduct() {
       try {
         this.loading = true;
         this.error = null;
-        this.product = null; // Önceki ürünü temizle
-        this.quantity = 1; // Miktarı sıfırla
-        this.addedToCart = false; // Sepete eklendi mesajını sıfırla
+        this.product = null;
+        this.quantity = 1;
+        
+        const response = await axios.get(`${this.apiBaseUrl}/api/Products/${this.id}`);
+        let productData = response.data;
 
-        const response = await axios.get(`https://localhost:7135/api/Products/${this.id}`);
-        this.product = response.data;
-
-        // Ürün geldiğinde ilk resmi ana resim olarak ayarla
-        if (this.product && this.product.imageUrls && this.product.imageUrls.length > 0) {
-          this.mainImage = this.product.imageUrls[0];
+        if (productData && productData.imageUrls && productData.imageUrls.length > 0) {
+          const fullImageUrls = productData.imageUrls.map(relativeUrl => `${this.apiBaseUrl}${relativeUrl}`);
+          productData.imageUrls = fullImageUrls;
+          this.mainImage = fullImageUrls[0];
         } else {
-          this.mainImage = 'https://via.placeholder.com/500/F8F8F8/C0C0C0?text=Resim+Yok'; // Resim yoksa varsayılan
+          this.mainImage = 'https://via.placeholder.com/500/F8F8F8/C0C0C0?text=Resim+Yok';
         }
 
-        if (!this.product) {
-          this.error = 'Ürün bulunamadı.';
-        }
+        this.product = productData;
 
       } catch (err) {
         console.error('Ürün detayları yüklenirken hata oluştu:', err);
@@ -158,12 +183,6 @@ export default {
     increaseQuantity() {
       if (this.product && this.quantity < this.product.stockQuantity) {
         this.quantity++;
-      } else if (this.product && this.product.stockQuantity === 0) {
-        // Stok yoksa artırma işlemi yapma
-      } else {
-        // Eğer stok miktarı tanımlı değilse veya çok büyükse bir limit belirleyebilirsiniz
-        // Şimdilik sadece stok miktarından fazla olmamasına dikkat edelim
-        this.quantity++;
       }
     },
 
@@ -173,63 +192,46 @@ export default {
       }
     },
 
-    addToCart() {
-      if (this.product.stockQuantity === 0) {
-        alert('Bu ürün stokta bulunmamaktadır.');
+    async addToCart() {
+      // Bu metodun mantığı zaten 'showAppToast' kullandığı için doğru.
+      if (!this.product || this.product.stockQuantity === 0) {
+        this.showAppToast('error', 'Stokta Yok', 'Bu ürün şu anda stokta bulunmamaktadır.');
         return;
       }
 
-      const cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+      const existingCartItem = this.cartItems.find(item => item.id === this.product.id);
+      const currentQuantityInCart = existingCartItem ? existingCartItem.quantity : 0;
+      const totalQuantityAfterAdd = currentQuantityInCart + this.quantity;
 
-      const existingItem = cart.find(item => item.id === this.product.id);
-
-      if (existingItem) {
-        // Stok miktarını aşmamaya dikkat et
-        if (existingItem.quantity + this.quantity > this.product.stockQuantity) {
-          alert(`Bu üründen stokta sadece ${this.product.stockQuantity - existingItem.quantity} adet daha ekleyebilirsiniz.`);
-          existingItem.quantity = this.product.stockQuantity; // Maksimum stoğa çek
-        } else {
-          existingItem.quantity += this.quantity;
-        }
-      } else {
-        // Stok miktarını aşmamaya dikkat et
-        if (this.quantity > this.product.stockQuantity) {
-          alert(`Bu üründen stokta sadece ${this.product.stockQuantity} adet bulunmaktadır.`);
-          this.quantity = this.product.stockQuantity; // Seçili miktarı stoğa çek
-          cart.push({
-            id: this.product.id,
-            name: this.product.name,
-            price: this.product.price,
-            image: this.mainImage,
-            quantity: this.quantity
-          });
-        } else {
-          cart.push({
-            id: this.product.id,
-            name: this.product.name,
-            price: this.product.price,
-            image: this.mainImage,
-            quantity: this.quantity
-          });
-        }
+      if (totalQuantityAfterAdd > this.product.stockQuantity) {
+        const remainingStock = this.product.stockQuantity - currentQuantityInCart;
+        const message = remainingStock > 0 
+          ? `Sepetinize en fazla ${remainingStock} adet daha ekleyebilirsiniz.` 
+          : `Bu ürün için sepete eklenebilecek maksimum adete ulaştınız.`;
+        this.showAppToast('error', 'Stok Yetersiz!', `Stokta ${this.product.stockQuantity} adet var. ${message}`);
+        return;
       }
 
-      localStorage.setItem('cartItems', JSON.stringify(cart));
+      try {
+        await this.addItemToCart({
+          product: { ...this.product, mainImage: this.mainImage },
+          quantity: this.quantity,
+        });
+        
+        this.showAppToast('success', 'Sepete Eklendi!', `"${this.product.name}" sepete başarıyla eklendi.`);
+        this.quantity = 1;
 
-      this.addedToCart = true;
-      setTimeout(() => {
-        this.addedToCart = false;
-      }, 3000);
-
-      window.dispatchEvent(new Event('cartUpdated'));
+      } catch (error) {
+        console.error('Sepete ekleme hatası:', error);
+        this.showAppToast('error', 'Hata!', error.message || 'Ürün sepete eklenirken bir hata oluştu.');
+      }
     },
 
     formatPrice(price) {
+      if (typeof price !== 'number') return '';
       return new Intl.NumberFormat('tr-TR', {
         style: 'currency',
         currency: 'TRY',
-        minimumFractionDigits: 0, // Kuruşları gösterme
-        maximumFractionDigits: 0, // Kuruşları gösterme
       }).format(price);
     }
   }
@@ -237,10 +239,101 @@ export default {
 </script>
 
 <style scoped>
+/* CSS styles aynı kalıyor */
 .product-detail {
   padding: 3rem 0;
   min-height: 80vh;
   background-color: #f9f9f9;
+}
+.app-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 1.2rem 1.8rem;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 2000;
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-width: 280px;
+  box-sizing: border-box;
+}
+
+.app-toast.success {
+  background: #28a745;
+  color: white;
+}
+
+.app-toast.error {
+  background: #dc3545;
+  color: white;
+}
+
+.toast-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.toast-content {
+  flex-grow: 1;
+}
+
+.toast-title {
+  display: block;
+  font-weight: 700;
+  font-size: 1.2em;
+  margin-bottom: 0.2em;
+}
+
+.toast-message {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.toast-action-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.toast-action-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: white;
+}
+
+/* Toast Geçiş Animasyonları */
+.toast-slide-fade-enter-active,
+.toast-slide-fade-leave-active {
+  transition: all 0.5s ease;
+}
+
+.toast-slide-fade-enter-from,
+.toast-slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(50px);
+}
+/* ... Diğer tüm CSS kodlarınız ... */
+
+.product-detail {
+  padding: 3rem 0;
+  min-height: 80vh;
+  background-color: #f9f9f9;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .container {
@@ -313,7 +406,7 @@ export default {
 /* Product Content */
 .product-content {
   display: grid;
-  grid-template-columns: 1fr 1.5fr; /* Resim alanı dar, bilgi alanı geniş */
+  grid-template-columns: 1fr 1.5fr; 
   gap: 4rem;
   background: white;
   border-radius: 15px;
@@ -332,7 +425,7 @@ export default {
   width: 100%;
   max-width: 450px;
   height: 450px;
-  object-fit: contain; /* Resmi içeriğe sığdırır */
+  object-fit: contain; 
   border-radius: 10px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
   border: 1px solid #eee;
@@ -341,7 +434,7 @@ export default {
 .thumbnail-gallery {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap; /* Küçük resimler sığmazsa alt satıra geçsin */
+  flex-wrap: wrap; 
   justify-content: center;
 }
 
