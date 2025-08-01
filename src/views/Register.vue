@@ -71,6 +71,15 @@
               <input type="password" id="confirmPassword" v-model="form.confirmPassword" required>
             </div>
             
+            <!-- === YENİ EKLENEN KVKK ONAY KUTUSU === -->
+            <div class="form-group kvkk-group">
+              <input type="checkbox" id="kvkk" v-model="form.kvkkAccepted">
+              <label for="kvkk" class="kvkk-label">
+                <router-link to="/kvkk-aydinlatma-metni" target="_blank">KVKK Aydınlatma Metni</router-link>'ni okudum, kabul ediyorum.
+              </label>
+            </div>
+            <!-- === KVKK BİTİŞ === -->
+            
             <div v-if="error" class="error-message">
               <i class="fas fa-exclamation-circle"></i> {{ error }}
             </div>
@@ -78,7 +87,8 @@
               <i class="fas fa-check-circle"></i> {{ successMessage }}
             </div>
 
-            <button type="submit" class="btn-register" :disabled="isLoading || tcError">
+            <!-- === KAYIT OL BUTONU GÜNCELLENDİ === -->
+            <button type="submit" class="btn-register" :disabled="isLoading || tcError || !form.kvkkAccepted">
               <span v-if="isLoading">
                 <i class="fas fa-spinner fa-spin"></i> Hesap Oluşturuluyor...
               </span>
@@ -98,7 +108,7 @@
 </template>
 
 <script>
-import axios from 'axios'; // Axios'u kullanmak için import ettim
+import axios from 'axios';
 
 export default {
   name: 'RegisterPage',
@@ -111,7 +121,8 @@ export default {
         phoneNumber: '', 
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        kvkkAccepted: false // === YENİ EKLENDİ ===
       },
       isLoading: false,
       error: null,
@@ -122,19 +133,17 @@ export default {
   methods: {
     validateTC() {
       const tcNo = this.form.tcKimlikNo;
-      this.tcError = null; // Her doğrulama öncesi hatayı sıfırla
+      this.tcError = null;
 
-      if (!tcNo) { // Alan boşsa hata verme
+      if (!tcNo) {
         return false;
       }
       
-      // Sadece rakam içermeli ve 11 haneli olmalı
       if (tcNo.length !== 11 || !/^[0-9]+$/.test(tcNo)) {
         this.tcError = "TC Kimlik No 11 haneli rakamlardan oluşmalıdır.";
         return false;
       }
 
-      // İlk hane sıfır olamaz
       if (tcNo[0] === '0') {
           this.tcError = "TC Kimlik Numarası '0' ile başlayamaz.";
           return false;
@@ -142,7 +151,6 @@ export default {
 
       const digits = tcNo.split('').map(Number);
       
-      // 10. haneyi kontrol et
       const sumOdd = digits[0] + digits[2] + digits[4] + digits[6] + digits[8];
       const sumEven = digits[1] + digits[3] + digits[5] + digits[7];
       const calculatedTenthDigit = (sumOdd * 7 - sumEven) % 10;
@@ -152,7 +160,6 @@ export default {
         return false;
       }
 
-      // 11. haneyi kontrol et
       const sumFirstTen = digits.slice(0, 10).reduce((acc, val) => acc + val, 0); 
       const calculatedEleventhDigit = sumFirstTen % 10;
       
@@ -166,13 +173,17 @@ export default {
     },
 
     async handleRegister() {
-      // Önce şifrelerin eşleşip eşleşmediğini kontrol et
+      // === YENİ EKLENEN KVKK KONTROLÜ ===
+      if (!this.form.kvkkAccepted) {
+        this.error = 'Devam etmek için KVKK Aydınlatma Metni\'ni kabul etmelisiniz.';
+        return;
+      }
+
       if (this.form.password !== this.form.confirmPassword) {
         this.error = 'Şifreler uyuşmuyor. Lütfen kontrol edin.';
         return;
       }
 
-      // TC kimlik no doğrulama
       if (!this.validateTC()) {
         this.error = this.tcError || 'Lütfen geçerli bir TC kimlik numarası giriniz.';
         return;
@@ -183,7 +194,6 @@ export default {
       this.successMessage = null;
 
       try {
-       
         const API_BASE_URL = 'https://localhost:7135/api'; 
 
         const response = await axios.post(`${API_BASE_URL}/Auth/Register`, {
@@ -196,25 +206,20 @@ export default {
           phoneNumber: this.form.phoneNumber 
         });
 
-        // Başarılı kayıt mesajını göster
         this.successMessage = response.data.message || 'Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...';
 
-        // 3 saniye sonra kullanıcıyı login sayfasına yönlendir
         setTimeout(() => {
           this.$router.push('/login');
         }, 3000);
 
       } catch (err) {
         if (err.response) {
-          // API'den gelen hata mesajlarını işle (örneğin FluentValidation hataları)
           if (err.response.data.errors) {
-            // Eğer birden fazla hata varsa, bunları birleştirerek göster
             this.error = Object.values(err.response.data.errors).flat().join('\n');
           } else {
             this.error = err.response.data.message || 'Kayıt sırasında bir hata oluştu.';
           }
         } else {
-          // Ağ hataları veya fetch ile ilgili diğer hatalar
           this.error = 'Sunucuyla bağlantı kurulamadı veya beklenmedik bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
         }
         console.error('Kayıt hatası:', err);
@@ -355,6 +360,37 @@ export default {
   border-color: #D4AF37; 
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
 }
+
+/* === YENİ KVKK GRUBU İÇİN STİLLER === */
+.kvkk-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 1rem; /* Butonla arasını açmak için */
+  margin-bottom: 1.5rem; /* Hata mesajıyla arasını açmak için */
+}
+.kvkk-group input[type="checkbox"] {
+  width: auto;
+  flex-shrink: 0;
+  margin-top: -2px; /* Dikeyde hizalamak için küçük ayar */
+}
+.kvkk-label {
+  font-size: 0.85rem;
+  color: #495057;
+  font-weight: 400;
+  margin-bottom: 0; /* Üstteki label'dan gelen boşluğu sıfırla */
+}
+.kvkk-label a {
+  color: #D4AF37;
+  text-decoration: none;
+  font-weight: 600;
+}
+.kvkk-label a:hover {
+  text-decoration: underline;
+}
+/* === KVKK STİLLERİ BİTİŞ === */
+
+
 .btn-register {
   width: 100%;
   padding: 14px 20px; 
@@ -365,8 +401,8 @@ export default {
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease; 
-  margin-top: 1.5rem; 
+  transition: all 0.3s ease; 
+  margin-top: 1rem; 
   display: flex; 
   align-items: center;
   justify-content: center;
@@ -374,6 +410,7 @@ export default {
 .btn-register:hover:not(:disabled) {
   background-color: #c09a25; 
   transform: translateY(-2px); 
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 .btn-register:disabled {
   background-color: #e6d8b6; 
@@ -394,7 +431,8 @@ export default {
   padding: 12px 15px; 
   border-radius: 8px; 
   text-align: left; 
-  margin-top: 20px; 
+  margin-top: 0; /* Butonla arasındaki boşluğu sıfırla, KVKK grubundan alsın */
+  margin-bottom: 1.5rem;
   font-size: 0.95rem;
   display: flex; 
   align-items: center;

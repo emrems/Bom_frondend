@@ -13,6 +13,7 @@ import Loginapp from "../views/Loginapp.vue";
 import Register from "../views/Register.vue";
 import ForgotPassword from "../views/ForgotPassword.vue";
 import UserProfile from "../userPages/UserProfile.vue"; // Doğru yol: userPages/UserProfile.vue
+import ResetPassword from "../views/ResetPassword.vue";
 
 const routes = [
   {
@@ -47,10 +48,10 @@ const routes = [
     component: Checkout,
   },
   {
-    path: '/account', // Header'da 'Profil' linkinin gittiği yol
+    path: '/account', 
     name: 'UserProfile',
     component: UserProfile,
-    meta: { requiresAuth: true } // Bu rotanın kimlik doğrulaması gerektirdiğini belirtin
+    meta: { requiresAuth: true }
   },
   {
     path: "/category/:slug",
@@ -73,6 +74,16 @@ const routes = [
     name: "ForgotPassword",
     component: ForgotPassword,
   },
+  {
+    path: "/kvkk-aydinlatma-metni",
+    name: "KvkkAydinlatmaMetni",
+    component: () => import('../views/KvkkAydinlatmaMetni.vue')
+  },
+  {
+    path: "/reset-password",
+    name: "ResetPassword",
+    component: ResetPassword
+  },
 ];
 
 const router = createRouter({
