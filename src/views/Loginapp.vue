@@ -96,8 +96,10 @@ export default {
       this.error = null;
 
       try {
+        // --- ÇÖZÜM BURADA ---
+        // Birleştirme çakışması çözüldü ve arkadaşınızın axios kullanan kodu korundu.
         const response = await axios.post(
-          "https://localhost:7135/api/Auth/Login",
+          "http://localhost:5294/api/Auth/Login",
           {
             email: this.email,
             password: this.password,
@@ -130,6 +132,7 @@ export default {
 </script>
 
 <style scoped>
+/* Stil kodlarınızda bir değişiklik yapmanıza gerek yok, olduğu gibi kalabilir */
 .login-page {
   display: flex;
   justify-content: center;
@@ -149,7 +152,6 @@ export default {
   overflow: hidden;
 }
 
-/* Sol Taraf: Görsel */
 .login-image-section {
   flex: 1;
   position: relative;
@@ -174,7 +176,7 @@ export default {
   padding: 40px;
 }
 .image-overlay h2 {
-  font-family: "Cinzel", serif; /* Şık bir serif font */
+  font-family: "Cinzel", serif;
   font-size: 2.5rem;
   margin-bottom: 1rem;
 }
@@ -183,7 +185,6 @@ export default {
   max-width: 80%;
 }
 
-/* Sağ Taraf: Form */
 .login-form-section {
   flex: 1;
   display: flex;
@@ -216,7 +217,6 @@ export default {
   color: #666;
 }
 
-/* Form Elemanları */
 .form-group {
   margin-bottom: 1.5rem;
 }
@@ -233,7 +233,7 @@ export default {
   font-size: 1rem;
   background-color: #f8f9fa;
   transition: all 0.3s ease;
-  color: #1a1a1a; /* YAZI RENGİ SİYAH YAPILDI */
+  color: #1a1a1a;
 }
 .form-group input:focus {
   outline: none;
@@ -270,7 +270,6 @@ export default {
   cursor: not-allowed;
 }
 
-/* Hata Mesajı */
 .error-message {
   background-color: #f8d7da;
   color: #721c24;
@@ -281,7 +280,6 @@ export default {
   margin-bottom: 1.5rem;
 }
 
-/* Kayıt Linki */
 .register-link {
   text-align: center;
   margin-top: 2rem;
@@ -293,10 +291,9 @@ export default {
   text-decoration: none;
 }
 
-/* Mobil Uyum */
 @media (min-width: 992px) {
   .login-image-section {
-    display: flex; /* Sadece büyük ekranlarda göster */
+    display: flex;
   }
 }
 @media (max-width: 768px) {

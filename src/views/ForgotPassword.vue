@@ -62,7 +62,7 @@ export default {
       // Bu özelliği eklemesi için backend ekibinizle konuşmanız gerekmektedir.
 
       try {
-        const API_BASE_URL = 'https://localhost:7001/api'; // Port numarasını kendi projenize göre güncelleyin.
+        const API_BASE_URL = 'http://localhost:5294/api'; // Port numarasını kendi projenize göre güncelleyin.
 
         const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
           method: 'POST',

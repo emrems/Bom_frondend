@@ -125,7 +125,7 @@ export default {
         this.quantity = 1; // Miktarı sıfırla
         this.addedToCart = false; // Sepete eklendi mesajını sıfırla
 
-        const response = await axios.get(`https://localhost:7135/api/Products/${this.id}`);
+        const response = await axios.get(`http://localhost:5294/api/Products/${this.id}`);
         this.product = response.data;
 
         // Ürün geldiğinde ilk resmi ana resim olarak ayarla

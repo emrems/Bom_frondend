@@ -90,7 +90,7 @@ export default {
       user: null,
       loading: false,
       error: null,
-      apiBaseUrl: 'https://localhost:7135/api',
+      apiBaseUrl: 'http://localhost:5294/api',
       
       showEditProfileModal: false,
       editProfileForm: {

@@ -60,7 +60,7 @@ export default {
     // async fetchCategoryData() {
     //   try {
     //     // ID prop'unu kullanarak kategori detaylarını getir
-    //     const response = await axios.get(`https://localhost:7135/api/Categories/${this.id}`);
+    //     const response = await axios.get(`http://localhost:5294/api/Categories/${this.id}`);
     //     this.category = response.data;
     //     this.categoryName = this.category.name;
     //     this.error = null; // Önceki hataları temizle
@@ -75,7 +75,7 @@ export default {
       this.error = null;   // Ürünlerle ilgili önceki hataları temizle
 
       try {
-        const response = await axios.get(`https://localhost:7135/api/Products/category/slug/${this.slug}`);
+        const response = await axios.get(`http://localhost:5294/api/Products/category/slug/${this.slug}`);
         this.products = response.data;
         console.log("kategoriye göre alınan ürünler", response.data);
       } catch (error) {

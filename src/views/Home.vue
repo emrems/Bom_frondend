@@ -147,7 +147,7 @@ export default {
         this.loading = true
         this.error = null
         
-        const response = await axios.get('https://localhost:7135/api/Products', {
+        const response = await axios.get('http://localhost:5294/api/Products', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
