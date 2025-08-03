@@ -90,7 +90,7 @@ export default createStore({
       try {
         const response = await axios.post('https://localhost:7135/api/Cart/add', payload, { headers });
         const updatedCartFromApi = response.data; // API'den dönen sepet objesi
-        console.log("aradığımız",response.data);
+        console.log("aradığımız CA",response.data);
 
         if (updatedCartFromApi && updatedCartFromApi.cartId && updatedCartFromApi.cartId !== state.cartId) {
           commit('SET_CART_ID', updatedCartFromApi.cartId);

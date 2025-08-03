@@ -17,9 +17,14 @@
             <i class="fas fa-home nav-icon"></i> Ana Sayfa
           </a>
 
-          <div class="nav-dropdown" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
+          <div
+            class="nav-dropdown"
+            @mouseenter="showDropdown = true"
+            @mouseleave="showDropdown = false"
+          >
             <button class="nav-item dropdown-toggle">
-              <i class="fas fa-list nav-icon"></i> Kategoriler <i class="fas fa-chevron-down dropdown-arrow"></i>
+              <i class="fas fa-list nav-icon"></i> Kategoriler
+              <i class="fas fa-chevron-down dropdown-arrow"></i>
             </button>
             <transition name="fade">
               <div v-if="showDropdown" class="dropdown-menu">
@@ -30,34 +35,67 @@
                   class="dropdown-item"
                   @click.prevent="navigate(`/category/${category.slug}`)"
                 >
-                  <i :class="getCategoryIcon(category.slug)" class="dropdown-icon"></i> {{ category.name }}
+                  <i
+                    :class="getCategoryIcon(category.slug)"
+                    class="dropdown-icon"
+                  ></i>
+                  {{ category.name }}
                 </a>
               </div>
             </transition>
           </div>
 
-          <a href="#" class="nav-item cart-link" @click.prevent="navigate('/cart')">
+          <a
+            href="#"
+            class="nav-item cart-link"
+            @click.prevent="navigate('/cart')"
+          >
             <i class="fas fa-shopping-cart nav-icon"></i> Sepet
-            <span v-if="cartItemCount > 0" class="cart-badge">{{ cartItemCount }}</span>
+            <span v-if="cartItemCount > 0" class="cart-badge">{{
+              cartItemCount
+            }}</span>
           </a>
 
-          <a href="#" class="nav-item" @click.prevent="navigate('/login')" v-if="!isAuthenticated">
+          <a
+            href="#"
+            class="nav-item"
+            @click.prevent="navigate('/login')"
+            v-if="!isAuthenticated"
+          >
             <i class="fas fa-sign-in-alt nav-icon"></i> Giriş Yap
           </a>
 
-          <div class="nav-dropdown" @mouseenter="showUserDropdown = true" @mouseleave="showUserDropdown = false" v-if="isAuthenticated">
+          <div
+            class="nav-dropdown"
+            @mouseenter="showUserDropdown = true"
+            @mouseleave="showUserDropdown = false"
+            v-if="isAuthenticated"
+          >
             <button class="nav-item dropdown-toggle">
-              <i class="fas fa-user-circle nav-icon"></i> Hesabım <i class="fas fa-chevron-down dropdown-arrow"></i>
+              <i class="fas fa-user-circle nav-icon"></i> Hesabım
+              <i class="fas fa-chevron-down dropdown-arrow"></i>
             </button>
             <transition name="fade">
               <div v-if="showUserDropdown" class="dropdown-menu">
-                <a href="#" class="dropdown-item" @click.prevent="navigate('/account')">
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  @click.prevent="navigate('/account')"
+                >
                   <i class="fas fa-user dropdown-icon"></i> Profil
                 </a>
-                <a href="#" class="dropdown-item" @click.prevent="navigate('/orders')">
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  @click.prevent="navigate('/orders')"
+                >
                   <i class="fas fa-box-open dropdown-icon"></i> Siparişlerim
                 </a>
-                <a href="#" class="dropdown-item logout-item" @click.prevent="handleLogout">
+                <a
+                  href="#"
+                  class="dropdown-item logout-item"
+                  @click.prevent="handleLogout"
+                >
                   <i class="fas fa-sign-out-alt dropdown-icon"></i> Çıkış Yap
                 </a>
               </div>
@@ -77,25 +115,25 @@
 </template>
 
 <script>
-import axios from 'axios';
-import { mapGetters, mapActions } from 'vuex';
+import axios from "axios";
+import { mapGetters, mapActions } from "vuex";
 
 export default {
-  name: 'Header',
+  name: "Header",
   data() {
     return {
       showDropdown: false,
       showUserDropdown: false,
       isMobileMenuOpen: false, // Mobil menü açık mı kapalı mı
-      categories: []
+      categories: [],
     };
   },
   computed: {
-    ...mapGetters(['isAuthenticated', 'cartItemCount']),
+    ...mapGetters(["isAuthenticated", "cartItemCount"]),
   },
   methods: {
-    ...mapActions(['logout', 'fetchCartDetails']),
-    
+    ...mapActions(["logout", "fetchCartDetails"]),
+
     navigate(path) {
       this.$router.push(path);
       this.closeMenus(); // Tüm menüleri kapat
@@ -116,18 +154,20 @@ export default {
 
     async fetchCategories() {
       try {
-        const response = await axios.get('https://localhost:7135/api/Categories');
+        const response = await axios.get(
+          "https://localhost:7135/api/Categories"
+        );
         this.categories = response.data;
       } catch (error) {
-        console.error('Kategoriler yüklenirken hata:', error);
+        console.error("Kategoriler yüklenirken hata:", error);
         this.categories = [
-          { id: 1, name: 'Altın Takılar', slug: 'altin-takilar' },
-          { id: 2, name: 'Gümüş Takılar', slug: 'gumus-takilar' },
-          { id: 3, name: 'Pırlanta Ürünler', slug: 'pirlanta-urunler' },
-          { id: 4, name: 'Bileklikler', slug: 'bileklikler' },
-          { id: 5, name: 'Kolyeler', slug: 'kolyeler' },
-          { id: 6, name: 'Yüzükler', slug: 'yuzukler' },
-          { id: 7, name: 'Küpeler', slug: 'kupeeler' }
+          { id: 1, name: "Altın Takılar", slug: "altin-takilar" },
+          { id: 2, name: "Gümüş Takılar", slug: "gumus-takilar" },
+          { id: 3, name: "Pırlanta Ürünler", slug: "pirlanta-urunler" },
+          { id: 4, name: "Bileklikler", slug: "bileklikler" },
+          { id: 5, name: "Kolyeler", slug: "kolyeler" },
+          { id: 6, name: "Yüzükler", slug: "yuzukler" },
+          { id: 7, name: "Küpeler", slug: "kupeeler" },
         ];
       }
     },
@@ -135,40 +175,40 @@ export default {
       try {
         await this.logout();
         this.closeMenus();
-        this.$router.push('/');
+        this.$router.push("/");
       } catch (error) {
-        console.error('Çıkış yapılırken hata:', error);
+        console.error("Çıkış yapılırken hata:", error);
       }
     },
     getCategoryIcon(slug) {
       const icons = {
-        'altin-takilar': 'fa-gem',
-        'gumus-takilar': 'fa-ring',
-        'pirlanta-urunler': 'fa-diamond',
-        'bileklikler': 'fa-bracelet', // Font Awesome 5'te bu ikonlar olmayabilir, kontrol edin.
-        'kolyeler': 'fa-necklace',   // Varsayılan olarak fa-tag döner
-        'yuzukler': 'fa-ring',
-        'kupeeler': 'fa-earrings'    // Varsayılan olarak fa-tag döner
+        "altin-takilar": "fa-gem",
+        "gumus-takilar": "fa-ring",
+        "pirlanta-urunler": "fa-diamond",
+        bileklikler: "fa-bracelet", // Font Awesome 5'te bu ikonlar olmayabilir, kontrol edin.
+        kolyeler: "fa-necklace", // Varsayılan olarak fa-tag döner
+        yuzukler: "fa-ring",
+        kupeeler: "fa-earrings", // Varsayılan olarak fa-tag döner
       };
       // Eğer Font Awesome Pro kullanmıyorsanız veya bu özel ikonlar yoksa,
       // `fas` yerine `fa` veya `far` kullanabilirsiniz. Ya da ortak bir ikon atayabilirsiniz.
-      return 'fas ' + (icons[slug] || 'fa-tag');
-    }
+      return "fas " + (icons[slug] || "fa-tag");
+    },
   },
   async mounted() {
     this.fetchCategories();
     try {
-        await this.fetchCartDetails();
+      await this.fetchCartDetails();
     } catch (error) {
-        console.error('Headerda sepet detayları yüklenirken hata:', error);
+      console.error("Headerda sepet detayları yüklenirken hata:", error);
     }
-  }
+  },
 };
 </script>
 
 <style scoped>
 /* Font Awesome ikonları için - BU SATIR EN ÜSTE TAŞINDI */
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css");
 
 /* Genel Yapı ve Sıfırlamalar */
 .main-header {
@@ -178,7 +218,7 @@ export default {
   top: 0;
   z-index: 1000;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Daha belirgin gölge */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Daha modern font */
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; /* Daha modern font */
 }
 
 .container {
@@ -234,7 +274,7 @@ export default {
 }
 
 .nav-item::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -3px; /* Alt çizginin yeri */
   left: 0;
@@ -324,8 +364,14 @@ export default {
 }
 
 @keyframes dropdownFadeIn {
-  from { opacity: 0; transform: translateY(-10px) scaleY(0.9); }
-  to { opacity: 1; transform: translateY(0) scaleY(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scaleY(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
 }
 
 .dropdown-item {
@@ -353,9 +399,9 @@ export default {
 }
 
 .dropdown-item.logout-item {
-    border-top: 1px solid #eee; /* Çıkış yap butonu için ayırıcı */
-    margin-top: 0.5rem;
-    padding-top: 1rem;
+  border-top: 1px solid #eee; /* Çıkış yap butonu için ayırıcı */
+  margin-top: 0.5rem;
+  padding-top: 1rem;
 }
 
 /* Hamburger Menü (Mobil) */
@@ -383,9 +429,12 @@ export default {
   transform-origin: center center;
 }
 
-.hamburger-menu span:nth-child(1) { transform-origin: top left; }
-.hamburger-menu span:nth-child(3) { transform-origin: bottom left; }
-
+.hamburger-menu span:nth-child(1) {
+  transform-origin: top left;
+}
+.hamburger-menu span:nth-child(3) {
+  transform-origin: bottom left;
+}
 
 .hamburger-menu span.is-active:nth-child(1) {
   transform: translateY(9px) rotate(45deg);
@@ -400,13 +449,15 @@ export default {
 }
 
 /* Responsive Tasarım */
-@media screen and (max-width: 992px) { /* Tablet boyutları için breakpoint */
+@media screen and (max-width: 992px) {
+  /* Tablet boyutları için breakpoint */
   .main-nav {
     gap: 1.2rem;
   }
 }
 
-@media screen and (max-width: 768px) { /* Mobil boyutları için breakpoint */
+@media screen and (max-width: 768px) {
+  /* Mobil boyutları için breakpoint */
   .hamburger-menu {
     display: flex; /* Mobilde görünür */
   }
@@ -493,9 +544,9 @@ export default {
   }
 
   .logout-item {
-      border-top: none; /* Mobilde ayırıcıyı kaldır */
-      margin-top: 0;
-      padding-top: 0.7rem;
+    border-top: none; /* Mobilde ayırıcıyı kaldır */
+    margin-top: 0;
+    padding-top: 0.7rem;
   }
 }
 
@@ -504,8 +555,8 @@ export default {
    bu durumda bu kurallar işe yaramayabilir.
    Gerekirse Font Awesome Pro'ya geçiş yapabilir veya farklı ikon kütüphaneleri kullanabilirsiniz. */
 @font-face {
-  font-family: 'Custom Icons'; /* Eğer özel ikon fontunuz varsa */
-  src: url('path/to/custom-icons.woff2') format('woff2');
+  font-family: "Custom Icons"; /* Eğer özel ikon fontunuz varsa */
+  src: url("path/to/custom-icons.woff2") format("woff2");
 }
 
 .fa-bracelet:before {

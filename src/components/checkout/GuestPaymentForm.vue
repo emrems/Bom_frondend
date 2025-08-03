@@ -1,15 +1,15 @@
-<!-- <template>
+<template>
   <div class="payment-section">
     <div class="section-header">
       <i class="fas fa-truck"></i>
-      <h2>Teslimat Bilgileri PAYMENT FORM</h2>
+      <h2>Teslimat Bilgileri</h2>
     </div>
     
     <transition name="form-fade" mode="out-in">
       <div v-if="!paymentToken" key="form" class="customer-form">
         <form @submit.prevent="submitForm" class="payment-form">
           
-          <div v-if="!isAuthenticated" class="guest-info-form">
+          <div class="guest-info-form">
             <h4>Siparişi Veren Kişinin Bilgileri</h4>
             <p>Sipariş durumu hakkında bilgi alabilmemiz için lütfen kendi bilgilerinizi girin.</p>
             
@@ -20,7 +20,7 @@
               </div>
               <div class="form-group floating-label">
                 <input type="text" id="guestLastName" v-model="guestInfo.lastName" required placeholder=" " />
-                <label for="guestLastName">SoyadınızMIII *</label>
+                <label for="guestLastName">Soyadınız *</label>
               </div>
             </div>
             <div class="form-group floating-label">
@@ -33,8 +33,8 @@
             </div>
           </div>
           
-          <hr v-if="!isAuthenticated" />
-
+          <hr/>
+          
           <div class="form-group floating-label">
             <input type="text" id="addressTitle" v-model="shippingAddress.addressTitle" required placeholder=" " />
             <label for="addressTitle">Adres Başlığı * (Örn: Ev, İş)</label>
@@ -68,7 +68,6 @@
             <textarea id="fullAddress" v-model="shippingAddress.fullAddress" required rows="3" placeholder=" "></textarea>
             <label for="fullAddress">Açık Adres *</label>
           </div>
-
           <div class="form-group floating-label">
             <input type="text" id="postalCode" v-model="shippingAddress.postalCode" placeholder=" " />
             <label for="postalCode">Posta Kodu (Opsiyonel)</label>
@@ -91,7 +90,14 @@
         </form>
       </div>
       <div v-else key="iframe" class="payment-iframe-container">
+        <div class="section-header">
+          <i class="fas fa-credit-card"></i>
+          <h2>Güvenli Ödeme</h2>
         </div>
+        <p class="payment-info">Ödemenizi tamamlamak için kart bilgilerinizi giriniz.</p>
+        <iframe :src="paymentUrl" width="100%" height="500" frameborder="0" class="payment-iframe" title="PayTR Güvenli Ödeme"></iframe>
+        <div class="payment-notes"><p><strong>Not:</strong> Ödeme işlemi PayTR güvencesi altında gerçekleşmektedir.</p></div>
+      </div>
     </transition>
 
     <BillingAddressModal 
@@ -104,11 +110,10 @@
 
 <script>
 import axios from 'axios';
-import { mapGetters } from 'vuex';
 import BillingAddressModal from './BillingAddressModal.vue';
 
 export default {
-  name: 'PaymentForm',
+  name: 'GuestPaymentForm',
   components: { BillingAddressModal },
   props: { paymentToken: String },
   emits: ['initiate-payment'],
@@ -116,34 +121,39 @@ export default {
     return {
       initiatingPayment: false,
       shippingAddress: {
-        addressTitle: 'Ev Adresim', contactName: '', phoneNumber: '', city: '',
-        district: '', fullAddress: '', postalCode: ''
+        addressTitle: 'Ev Adresim',
+        contactName: '',
+        phoneNumber: '',
+        city: '',
+        district: '',
+        fullAddress: '',
+        postalCode: ''
       },
       guestInfo: {
-        firstName: '', lastName: '', email: '', phone: ''
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: ''
       },
       isBillingDifferent: false,
       billingAddress: null,
       notes: '',
       showBillingModal: false,
       apiBaseUrl: 'https://localhost:7135',
-      cities: [], districts: [], selectedCityId: '', 
+      cities: [],
+      districts: [],
+      selectedCityId: '', 
     };
   },
   computed: {
-    ...mapGetters(['isAuthenticated', 'user']),
+    paymentUrl() {
+      return this.paymentToken ? `https://www.paytr.com/odeme/guvenli/${this.paymentToken}` : '';
+    }
   },
   async created() {
     await this.fetchCities();
-    this.prefillFormIfLoggedIn();
   },
   methods: {
-    prefillFormIfLoggedIn() {
-      if (this.isAuthenticated && this.user) {
-        this.shippingAddress.contactName = `${this.user.firstName} ${this.user.lastName}`;
-        this.shippingAddress.phoneNumber = this.user.phoneNumber || '';
-      }
-    },
     async fetchCities() {
       try {
         const response = await axios.get(`${this.apiBaseUrl}/api/locations/cities/1`);
@@ -180,7 +190,7 @@ export default {
       this.initiatingPayment = true;
       this.$emit('initiate-payment', {
         shippingAddress: this.shippingAddress,
-        billingAddress: this.isBillingDifferent ? this.billingAddress : this.shippingAddress,
+        billingAddress: this.isBillingDifferent ? this.billingAddress : null,
         notes: this.notes,
         guestInfo: this.guestInfo,
       });
@@ -188,10 +198,12 @@ export default {
     },
   },
   watch: {
-    user(newUser) { if (newUser) this.prefillFormIfLoggedIn(); },
     isBillingDifferent(newValue) {
-      if (newValue) this.showBillingModal = true;
-      else this.billingAddress = null;
+      if (newValue) {
+        this.showBillingModal = true;
+      } else {
+        this.billingAddress = null;
+      }
     }
   }
 }
@@ -234,4 +246,4 @@ hr { border: none; border-top: 1px solid #f0f0f0; }
 .form-fade-enter-active, .form-fade-leave-active { transition: opacity 0.4s ease; }
 .form-fade-enter-from, .form-fade-leave-to { opacity: 0; }
 @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
-</style> -->
+</style>

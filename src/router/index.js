@@ -14,7 +14,8 @@ import Register from "../views/Register.vue";
 import ForgotPassword from "../views/ForgotPassword.vue";
 import UserProfile from "../userPages/UserProfile.vue"; // Doğru yol: userPages/UserProfile.vue
 import ResetPassword from "../views/ResetPassword.vue";
-
+import OrdersList from "../views/order/OrdersList.vue";
+import OrderDetail from "../views/order/OrderDetail.vue";
 const routes = [
   {
     path: "/",
@@ -84,6 +85,18 @@ const routes = [
     name: "ResetPassword",
     component: ResetPassword
   },
+ {
+    path: '/orders',
+    name: 'OrdersList',
+    component: OrdersList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/orders/:id',
+    name: 'OrderDetail',
+    component: OrderDetail,
+    meta: { requiresAuth: true }
+  },
 ];
 
 const router = createRouter({
