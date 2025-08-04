@@ -169,7 +169,7 @@ export default {
           throw new Error("Oturum açmanız gerekiyor");
         }
 
-        const response = await axios.get("https://localhost:7135/api/Orders", {
+        const response = await axios.get("http://localhost:5294/api/Orders", {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },

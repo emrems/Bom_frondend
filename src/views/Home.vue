@@ -4,14 +4,17 @@
       <HeroSection />
     </div>
 
+    <!-- GÜNCELLENDİ: Bu slider artık 'bestsellers' verisini kullanacak -->
     <div class="section-container">
-      <FeaturedProductsSlider :products="products" :loading="loading" :error="error" />
+      <FeaturedProductsSlider :products="bestsellers" :loading="loading" :error="error" />
     </div>
 
+    <!-- DOKUNULMADI: Bu bölüm olduğu gibi kaldı -->
     <div class="section-container">
       <CampaignsSection />
     </div>
 
+    <!-- DOKUNULMADI: Bu bölüm tüm ürünleri göstermeye devam ediyor -->
     <div class="section-container">
       <ProductListSection :products="products" :loading="loading" :error="error" @retry-fetch="fetchProducts" />
     </div>
@@ -36,17 +39,20 @@ export default {
   data() {
     return {
       products: [],
+      // YENİ: Vitrin (FeaturedProductsSlider) için çok satanlar dizisi eklendi
+      bestsellers: [],
       loading: true,
       error: null,
-      // YENİ: Backend sunucusunun ana adresini buraya ekliyoruz.
-      apiBaseUrl: 'https://localhost:7135', 
+      apiBaseUrl: 'http://localhost:5294', 
     };
   },
   mounted() {
-    this.fetchProducts();
+    this.fetchProducts(); // Tüm ürünleri çek
+    this.fetchBestsellers(); // Çok satanları çek
     this.initScrollAnimations();
   },
   methods: {
+    // Bu metot 'ProductListSection' için tüm ürünleri çekmeye devam ediyor
     async fetchProducts() {
       try {
         this.loading = true;
@@ -54,10 +60,8 @@ export default {
         
         const response = await axios.get(`${this.apiBaseUrl}/api/Products`);
         
-        // GÜNCELLENDİ: Resim URL'sini oluştururken apiBaseUrl'i kullanıyoruz.
         this.products = response.data.map(product => {
           const imageUrl = product.imageUrls && product.imageUrls.length > 0
-            // Göreceli yolun başına backend adresini ekliyoruz.
             ? `${this.apiBaseUrl}${product.imageUrls[0]}` 
             : 'https://via.placeholder.com/400?text=Resim+Yok';
           
@@ -72,6 +76,30 @@ export default {
         this.error = this.getErrorMessage(error);
       } finally {
         this.loading = false;
+      }
+    },
+
+    // YENİ: Bu metot 'FeaturedProductsSlider' için çok satanları çekiyor
+    async fetchBestsellers() {
+      try {
+        // Not: Bu isteğin 'loading' durumunu etkilememesi için ayrı yönetiyoruz
+        const response = await axios.get(`${this.apiBaseUrl}/api/Products/bestsellers`);
+        
+        this.bestsellers = response.data.map(product => {
+          const imageUrl = product.imageUrls && product.imageUrls.length > 0
+            ? `${this.apiBaseUrl}${product.imageUrls[0]}` 
+            : 'https://via.placeholder.com/400?text=Resim+Yok';
+          
+          return {
+            ...product,
+            imageUrl: imageUrl
+          };
+        });
+
+      } catch (error) {
+        console.error('Çok satan ürünleri çekerken hata:', error);
+        // Vitrin bölümünün boş kalmaması için hata durumunda ana ürünlerden birkaçını gösterebiliriz
+        // veya hata mesajı gösterebiliriz. Şimdilik konsola yazdırıyoruz.
       }
     },
 
