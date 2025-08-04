@@ -140,6 +140,11 @@ export default {
         { value: "Rejected", label: "Reddedildi" },
         { value: "Shipped", label: "Kargoya Verildi" },
         { value: "Cancelled", label: "İptal Edildi" },
+        { value: "ReturnRequested", label: "İade Talebi" },
+        { value: "ReturnApproved", label: "İade Onaylandı" },
+        { value: "ReturnRejected", label: "İade Reddedildi" },
+        {value:"Delivered",label:"teslim edildi"}
+
       ],
     };
   },
@@ -200,7 +205,7 @@ export default {
     },
 
     getStatusClass(status) {
-      return `status-${status.toLowerCase()}`;
+      return `status-${status.toLowerCase().replace(/\s/g, '')}`;
     },
 
     getStatusText(status) {
@@ -249,6 +254,71 @@ export default {
 
 <style scoped>
 /* Temel Stiller */
+/* Durum Renkleri */
+.status-pendingapproval {
+  border-left-color: #f39c12;
+}
+.status-pendingapproval .order-status {
+  background-color: #fef5e6;
+  color: #f39c12;
+}
+
+.status-approved {
+  border-left-color: #3498db;
+}
+.status-approved .order-status {
+  background-color: #e8f4fc;
+  color: #3498db;
+}
+
+.status-rejected {
+  border-left-color: #e74c3c;
+}
+.status-rejected .order-status {
+  background-color: #fdedec;
+  color: #e74c3c;
+}
+
+.status-shipped {
+  border-left-color: #9b59b6;
+}
+.status-shipped .order-status {
+  background-color: #f5eef8;
+  color: #9b59b6;
+}
+
+.status-cancelled {
+  border-left-color: #7f8c8d;
+}
+.status-cancelled .order-status {
+  background-color: #ecf0f1;
+  color: #7f8c8d;
+}
+
+/* İade Durumları */
+.status-returnrequested {
+  border-left-color: #e67e22;
+}
+.status-returnrequested .order-status {
+  background-color: #fdf2e9;
+  color: #e67e22;
+}
+
+.status-returnapproved {
+  border-left-color: #2ecc71;
+}
+.status-returnapproved .order-status {
+  background-color: #e8f8f0;
+  color: #2ecc71;
+}
+
+.status-returnrejected {
+  border-left-color: #c0392b;
+}
+.status-returnrejected .order-status {
+  background-color: #f9ebea;
+  color: #c0392b;
+}
 .orders-container {
   max-width: 800px;
   margin: 2rem auto;

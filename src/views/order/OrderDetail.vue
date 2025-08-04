@@ -130,11 +130,19 @@
         <button @click="$router.back()" class="back-button">
           <i class="fas fa-arrow-left"></i> Siparişlerime Dön
         </button>
-        <button v-if="canCancel" @click="cancelOrder" class="cancel-button">
+        <button 
+          v-if="canCancel" 
+          @click="cancelOrder" 
+          class="cancel-button"
+        >
           <i class="fas fa-times-circle"></i> Siparişi İptal Et
         </button>
-        <button v-if="canTrack" @click="trackOrder" class="track-button">
-          <i class="fas fa-truck"></i> Kargoyu Takip Et
+        <button 
+          v-if="canRequestReturn" 
+          @click="requestReturn" 
+          class="return-button"
+        >
+          <i class="fas fa-undo"></i> İade Talebi Oluştur
         </button>
       </div>
     </div>
@@ -153,21 +161,25 @@ export default {
       loading: false,
       error: null,
       orderStatuses: [
-        { value: 'Pending', label: 'Beklemede' },
-        { value: 'Processing', label: 'Hazırlanıyor' },
-        { value: 'Shipped', label: 'Kargolandı' },
+        { value: 'PendingApproval', label: 'Onay Bekliyor' },
+        { value: 'Approved', label: 'Onaylandı' },
+        { value: 'Rejected', label: 'Reddedildi' },
+        { value: 'Shipped', label: 'Kargoya Verildi' },
         { value: 'Delivered', label: 'Teslim Edildi' },
-        { value: 'Cancelled', label: 'İptal Edildi' }
+        { value: 'Cancelled', label: 'İptal Edildi' },
+        { value: 'ReturnRequested', label: 'İade Talebi' },
+        { value: 'ReturnApproved', label: 'İade Onaylandı' },
+        { value: 'ReturnRejected', label: 'İade Reddedildi' }
       ]
     };
   },
   computed: {
     ...mapState(['token']),
     canCancel() {
-      return this.order && this.order.orderStatus && ['Pending', 'Processing'].includes(this.order.orderStatus);
+      return this.order && ['PendingApproval', 'Approved'].includes(this.order.orderStatus);
     },
-    canTrack() {
-      return this.order && this.order.orderStatus && ['Shipped', 'Delivered'].includes(this.order.orderStatus);
+    canRequestReturn() {
+      return this.order && ['Shipped', 'Delivered'].includes(this.order.orderStatus);
     }
   },
   methods: {
@@ -231,11 +243,20 @@ export default {
         this.loading = false;
       }
     },
-    trackOrder() {
-      if (this.order.trackingNumber) {
-        window.open(`https://www.kargotakip.com/?no=${this.order.trackingNumber}`, '_blank');
-      } else {
-        alert('Kargo takip numarası bulunamadı');
+    async requestReturn() {
+      if (!confirm('Bu ürün için iade talebi oluşturmak istediğinize emin misiniz?')) return;
+      
+      try {
+        this.loading = true;
+        await axios.post(`https://localhost:7135/api/Orders/${this.order.id}/return-request`, null, {
+          headers: { Authorization: `Bearer ${this.token}` }
+        });
+        alert('İade talebiniz başarıyla oluşturuldu');
+        this.fetchOrderDetail(); // Yenile
+      } catch (e) {
+        alert('İade talebi oluşturulamadı: ' + (e.response?.data?.message || e.message));
+      } finally {
+        this.loading = false;
       }
     }
   },
@@ -244,6 +265,7 @@ export default {
   }
 };
 </script>
+
 <style scoped>
 .order-detail-container {
   max-width: 1000px;
@@ -306,10 +328,6 @@ export default {
   font-weight: 500;
 }
 
-.retry-button:hover {
-  background-color: #c0392b;
-}
-
 .retry-button i {
   margin-right: 0.5rem;
   font-size: 0.9rem;
@@ -356,14 +374,20 @@ export default {
   font-size: 0.85rem;
 }
 
-.status-pending {
+/* Durum Renkleri */
+.status-pendingapproval {
   background-color: #fef5e6;
   color: #f39c12;
 }
 
-.status-processing {
+.status-approved {
   background-color: #e8f4fc;
   color: #3498db;
+}
+
+.status-rejected {
+  background-color: #fdedec;
+  color: #e74c3c;
 }
 
 .status-shipped {
@@ -377,8 +401,23 @@ export default {
 }
 
 .status-cancelled {
-  background-color: #fdedec;
-  color: #e74c3c;
+  background-color: #ecf0f1;
+  color: #7f8c8d;
+}
+
+.status-returnrequested {
+  background-color: #fdf2e9;
+  color: #e67e22;
+}
+
+.status-returnapproved {
+  background-color: #e8f8f0;
+  color: #2ecc71;
+}
+
+.status-returnrejected {
+  background-color: #f9ebea;
+  color: #c0392b;
 }
 
 .order-meta {
@@ -578,13 +617,13 @@ export default {
   background-color: #c0392b;
 }
 
-.track-button {
-  background-color: #3498db;
+.return-button {
+  background-color: #e67e22;
   color: white;
 }
 
-.track-button:hover {
-  background-color: #2980b9;
+.return-button:hover {
+  background-color: #d35400;
 }
 
 /* Responsive */
