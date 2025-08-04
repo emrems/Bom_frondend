@@ -35,8 +35,11 @@
           </div>
 
           <div class="profile-actions-section">
-            <button @click="openEditProfileModal" class="app-button ">
+            <button @click="openEditProfileModal" class="app-button">
               <i class="fas fa-edit icon-button"></i> Profili Düzenle
+            </button>
+            <button @click="openAddressModal" class="app-button">
+              <i class="fas fa-map-marker-alt icon-button"></i> Adreslerimi Yönet
             </button>
             <button @click="changePassword" class="app-button secondary-button">
               <i class="fas fa-key icon-button"></i> Şifre Değiştir
@@ -46,10 +49,11 @@
       </div>
     </div>
 
+    <!-- Mevcut Profil Düzenleme Modalı -->
     <transition name="modal-fade">
       <div v-if="showEditProfileModal" class="modal-overlay" @click.self="closeEditProfileModal">
         <div class="modal-content">
-          <button class="modal-close-button" @click="closeEditProfileModal">&times;</button>
+          <button class="modal-close-button" @click="closeEditProfileModal">×</button>
           <h3>Profil Bilgilerini Düzenle</h3>
           <form @submit.prevent="submitProfileUpdate">
             <div class="form-group">
@@ -80,6 +84,107 @@
         </div>
       </div>
     </transition>
+
+    <!-- Adres Yönetimi Modalı (GÜNCELLENDİ) -->
+    <transition name="modal-fade">
+      <div v-if="showAddressModal" class="modal-overlay" @click.self="closeAddressModal">
+        <div class="modal-content">
+          <button class="modal-close-button" @click="closeAddressModal">×</button>
+          <h3>Adres Yönetimi</h3>
+
+          <div v-if="addressError" class="alert-message error-status modal-message">{{ addressError }}</div>
+
+          <!-- Adres Listesi Görünümü -->
+          <div v-if="!isEditingOrAddingAddress">
+            <div v-if="loadingAddresses" class="loading-status alert-message">
+              <i class="fas fa-spinner fa-spin"></i> Adresler yükleniyor...
+            </div>
+            <div v-else>
+              <ul v-if="addresses.length > 0" class="address-list">
+                <li v-for="address in addresses" :key="address.id" class="address-item">
+                  <div class="address-details">
+                    <strong>{{ address.addressTitle }}</strong>
+                    <p>{{ address.fullAddress }}, {{ address.district }} / {{ address.city }}</p>
+                    <p>{{ address.contactName }} - {{ address.phoneNumber }}</p>
+                  </div>
+                  <div class="address-actions">
+                    <button @click="startEditAddress(address)" class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                    <button @click="confirmDeleteAddress(address.id)" class="action-btn delete-btn"><i class="fas fa-trash"></i></button>
+                  </div>
+                </li>
+              </ul>
+              <div v-else class="alert-message">
+                <i class="fas fa-info-circle"></i> Kayıtlı adresiniz bulunmamaktadır.
+              </div>
+              <div class="modal-buttons mt-4">
+                <button @click="startAddNewAddress" class="app-button primary-button">
+                  <i class="fas fa-plus"></i> Yeni Adres Ekle
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Adres Ekleme/Düzenleme Formu -->
+          <div v-else>
+            <form @submit.prevent="handleSaveAddress">
+              <div class="form-group">
+                <label for="addressTitle">Adres Başlığı</label>
+                <input type="text" id="addressTitle" v-model="addressForm.addressTitle" class="form-input" required placeholder="Ev, İşyeri vb.">
+              </div>
+              <div class="form-group">
+                <label for="contactName">İsim Soyisim</label>
+                <input type="text" id="contactName" v-model="addressForm.contactName" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label for="phoneNumber">Telefon Numarası</label>
+                <input type="tel" id="phoneNumber" v-model="addressForm.phoneNumber" class="form-input" required>
+              </div>
+
+              <!-- ====================================================== -->
+              <!-- GÜNCELLENMİŞ ALAN: ŞEHİR VE İLÇE SEÇİMİ -->
+              <!-- ====================================================== -->
+              <div class="form-group">
+                <label for="city">Şehir</label>
+                <select id="city" v-model="locationData.selectedCityId" @change="onCityChange" class="form-input" required :disabled="loadingLocations.cities">
+                  <option disabled :value="null">{{ loadingLocations.cities ? 'Şehirler Yükleniyor...' : 'Lütfen bir şehir seçin' }}</option>
+                  <option v-for="city in cities" :key="city.id" :value="city.id">
+                    {{ city.name }}
+                  </option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="district">İlçe</label>
+                <select id="district" v-model="addressForm.district" class="form-input" required :disabled="!locationData.selectedCityId || loadingLocations.districts">
+                  <option disabled value="">{{ loadingLocations.districts ? 'İlçeler Yükleniyor...' : 'Lütfen bir ilçe seçin' }}</option>
+                  <option v-for="district in districts" :key="district.id" :value="district.name">
+                    {{ district.name }}
+                  </option>
+                </select>
+              </div>
+              <!-- ====================================================== -->
+
+              <div class="form-group">
+                <label for="fullAddress">Açık Adres</label>
+                <textarea id="fullAddress" v-model="addressForm.fullAddress" class="form-input" rows="3" required></textarea>
+              </div>
+              <div class="form-group">
+                <label for="postalCode">Posta Kodu</label>
+                <input type="text" id="postalCode" v-model="addressForm.postalCode" class="form-input">
+              </div>
+              <div class="modal-buttons">
+                <button type="submit" class="app-button primary-button" :disabled="isSavingAddress">
+                  <i v-if="isSavingAddress" class="fas fa-spinner fa-spin"></i>
+                  <i v-else class="fas fa-save"></i>
+                  {{ isSavingAddress ? 'Kaydediliyor...' : 'Kaydet' }}
+                </button>
+                <button type="button" class="app-button secondary-button" @click="cancelEditOrAddAddress">İptal</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -87,14 +192,26 @@
 import axios from 'axios';
 import { mapGetters, mapActions } from 'vuex';
 
+const initialAddressFormState = {
+  id: null,
+  addressTitle: '',
+  contactName: '',
+  phoneNumber: '',
+  city: '',
+  district: '',
+  fullAddress: '',
+  postalCode: '',
+};
+
 export default {
   name: 'UserProfile',
   data() {
     return {
+      // Mevcut datalarınız
       user: null,
       loading: false,
       error: null,
-      apiBaseUrl: 'https://localhost:7135/api',
+      apiBaseUrl: 'http://localhost:5294/api',
       
       showEditProfileModal: false,
       editProfileForm: {
@@ -104,7 +221,31 @@ export default {
       },
       isUpdatingProfile: false,
       profileUpdateError: null,
-      profileUpdateSuccess: null
+      profileUpdateSuccess: null,
+
+      // Adres Yönetimi Dataları
+      showAddressModal: false,
+      addresses: [],
+      loadingAddresses: false,
+      addressError: null,
+      isEditingOrAddingAddress: false,
+      isSavingAddress: false,
+      addressForm: { ...initialAddressFormState },
+      editingAddressId: null,
+
+      // ======================================================
+      // YENİ EKLENEN LOKASYON DATA DEĞİŞKENLERİ
+      // ======================================================
+      cities: [],
+      districts: [],
+      locationData: {
+        selectedCountryId: 1, // Türkiye'nin ID'sini 1 varsayıyoruz
+        selectedCityId: null,
+      },
+      loadingLocations: {
+        cities: false,
+        districts: false,
+      },
     };
   },
   computed: {
@@ -118,11 +259,25 @@ export default {
         this.user = null;
         this.error = 'Lütfen giriş yapın.'; 
       }
+    },
+    // ======================================================
+    // YENİ EKLENEN İZLEYİCİ (WATCHER)
+    // Şehir ID'si değiştiğinde ilçeleri otomatik getirir.
+    // ======================================================
+    'locationData.selectedCityId'(newCityId, oldCityId) {
+      if (newCityId !== oldCityId) {
+        this.addressForm.district = ''; // Önceki ilçe seçimini temizle
+        this.districts = []; // İlçe listesini boşalt
+        if (newCityId) {
+          this.fetchDistricts(newCityId);
+        }
+      }
     }
   },
   methods: {
     ...mapActions(['logout']),
 
+    // Mevcut metodlarınız (hiçbir değişiklik yok)
     async fetchUserProfile() {
       this.loading = true;
       this.error = null;
@@ -134,9 +289,7 @@ export default {
           }
           return;
         }
-
         const token = this.$store.state.token;
-
         const response = await axios.get(`${this.apiBaseUrl}/Auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -173,11 +326,13 @@ export default {
       this.profileUpdateSuccess = null; 
       this.showEditProfileModal = true;
     },
+
     closeEditProfileModal() {
       this.showEditProfileModal = false;
       this.profileUpdateError = null;
       this.profileUpdateSuccess = null;
     },
+
     async submitProfileUpdate() {
       this.isUpdatingProfile = true;
       this.profileUpdateError = null;
@@ -189,14 +344,12 @@ export default {
           lastName: this.editProfileForm.lastName,
           phoneNumber: this.editProfileForm.phoneNumber
         };
-
         await axios.put(`${this.apiBaseUrl}/Auth/me`, payload, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-
         this.profileUpdateSuccess = 'Profiliniz başarıyla güncellendi!';
         await this.fetchUserProfile(); 
         setTimeout(() => {
@@ -220,7 +373,190 @@ export default {
 
     changePassword() {
       alert('Şifre değiştirme özelliği yakında!'); 
+    },
+
+    // ======================================================
+    // ADRES YÖNETİMİ METODLARI (BAZILARI GÜNCELLENDİ)
+    // ======================================================
+    
+    openAddressModal() {
+      this.showAddressModal = true;
+      this.addressError = null;
+      this.fetchAddresses();
+      // Eğer şehirler daha önce çekilmediyse, şimdi çekelim.
+      if (this.cities.length === 0) {
+        this.fetchCities(this.locationData.selectedCountryId);
+      }
+    },
+
+    closeAddressModal() {
+      this.showAddressModal = false;
+      this.isEditingOrAddingAddress = false;
+      this.addressError = null;
+      this.addresses = [];
+      // Lokasyon verilerini de temizleyelim ki modal tekrar açıldığında güncel olsun
+      this.cities = [];
+      this.districts = [];
+    },
+
+    async fetchAddresses() {
+      this.loadingAddresses = true;
+      this.addressError = null;
+      try {
+        const token = this.$store.state.token;
+        const response = await axios.get(`${this.apiBaseUrl}/Addresses`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        this.addresses = response.data;
+      } catch (err) {
+        console.error('Adresler yüklenirken hata:', err);
+        this.addressError = 'Adresler yüklenirken bir hata oluştu.';
+      } finally {
+        this.loadingAddresses = false;
+      }
+    },
+
+    startAddNewAddress() {
+      this.editingAddressId = null;
+      this.addressForm = { ...initialAddressFormState }; // Formu sıfırla
+      this.locationData.selectedCityId = null; // Şehir seçimini sıfırla
+      this.districts = []; // İlçe listesini temizle
+      this.isEditingOrAddingAddress = true;
+    },
+
+    async startEditAddress(address) {
+      this.editingAddressId = address.id;
+      this.addressForm = { ...address }; 
+      this.isEditingOrAddingAddress = true;
+
+      // Kayıtlı adresten şehir ve ilçeyi ayarlamak için
+      // Önce şehirlerin yüklendiğinden emin olalım
+      if (this.cities.length === 0) {
+        await this.fetchCities(this.locationData.selectedCountryId);
+      }
+      
+      // Kayıtlı şehir ismine göre ID'sini bul ve seç
+      const city = this.cities.find(c => c.name === address.city);
+      if (city) {
+        this.locationData.selectedCityId = city.id;
+        // Watcher, bu ID değişikliği ile ilçeleri otomatik olarak getirecek
+        // ve 'addressForm.district' zaten dolu olduğu için doğru ilçe seçili olacaktır.
+      }
+    },
+
+    cancelEditOrAddAddress() {
+      this.isEditingOrAddingAddress = false;
+      this.addressError = null;
+      this.editingAddressId = null;
+    },
+
+    async deleteAddress(id) {
+      this.addressError = null;
+      try {
+        const token = this.$store.state.token;
+        await axios.delete(`${this.apiBaseUrl}/Addresses/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        await this.fetchAddresses(); // Listeyi yenile
+      } catch (err) {
+        console.error('Adres silinirken hata:', err);
+        this.addressError = 'Adres silinirken bir hata oluştu.';
+      }
+    },
+
+    confirmDeleteAddress(id) {
+      if (window.confirm('Bu adresi silmek istediğinizden emin misiniz?')) {
+        this.deleteAddress(id);
+      }
+    },
+
+    handleSaveAddress() {
+      if (this.editingAddressId) {
+        this.updateAddress();
+      } else {
+        this.createAddress();
+      }
+    },
+
+    async createAddress() {
+      this.isSavingAddress = true;
+      this.addressError = null;
+      try {
+        const token = this.$store.state.token;
+        const payload = { ...this.addressForm };
+        delete payload.id; 
+
+        await axios.post(`${this.apiBaseUrl}/Addresses`, payload, {
+           headers: { Authorization: `Bearer ${token}` }
+        });
+        this.isEditingOrAddingAddress = false;
+        await this.fetchAddresses();
+      } catch (err) {
+        console.error('Adres eklenirken hata:', err);
+        this.addressError = 'Adres eklenirken bir hata oluştu. Lütfen tüm alanları kontrol edin.';
+      } finally {
+        this.isSavingAddress = false;
+      }
+    },
+
+    async updateAddress() {
+      this.isSavingAddress = true;
+      this.addressError = null;
+      try {
+        const token = this.$store.state.token;
+        await axios.put(`${this.apiBaseUrl}/Addresses/${this.editingAddressId}`, this.addressForm, {
+           headers: { Authorization: `Bearer ${token}` }
+        });
+        this.isEditingOrAddingAddress = false;
+        await this.fetchAddresses();
+      } catch (err) {
+        console.error('Adres güncellenirken hata:', err);
+        this.addressError = 'Adres güncellenirken bir hata oluştu.';
+      } finally {
+        this.isSavingAddress = false;
+      }
+    },
+
+    // ======================================================
+    // YENİ EKLENEN LOKASYON METODLARI
+    // ======================================================
+    
+    async fetchCities(countryId) {
+      this.loadingLocations.cities = true;
+      try {
+        const response = await axios.get(`${this.apiBaseUrl}/Locations/cities/${countryId}`);
+        this.cities = response.data;
+      } catch (err) {
+        console.error('Şehirler yüklenirken hata:', err);
+        this.addressError = "Şehirler yüklenemedi. Lütfen daha sonra tekrar deneyin.";
+      } finally {
+        this.loadingLocations.cities = false;
+      }
+    },
+
+    async fetchDistricts(cityId) {
+      this.loadingLocations.districts = true;
+      this.addressError = null; // Önceki hataları temizle
+      try {
+        const response = await axios.get(`${this.apiBaseUrl}/Locations/districts/${cityId}`);
+        this.districts = response.data;
+      } catch (err) {
+        console.error('İlçeler yüklenirken hata:', err);
+        this.addressError = "İlçeler yüklenemedi. Lütfen daha sonra tekrar deneyin.";
+      } finally {
+        this.loadingLocations.districts = false;
+      }
+    },
+    
+    onCityChange(event) {
+      const cityId = event.target.value;
+      const selectedCityObject = this.cities.find(c => c.id == cityId);
+      if (selectedCityObject) {
+        // API'ye string olarak city adı gönderildiği için formdaki city alanını güncelliyoruz.
+        this.addressForm.city = selectedCityObject.name;
+      }
     }
+
   },
   mounted() {
     this.fetchUserProfile();
@@ -428,47 +764,39 @@ export default {
   justify-content: center;
   gap: 10px;
   text-decoration: none;
-  /* Metin rengini burada daha net tanımlayalım */
+  color: black; /* Buton metin rengini genel olarak beyaz yapalım */
 }
 
-.icon-button {
-    font-size: 1.15em; /* İkonu metne göre boyutlandır */
-}
-
-.primary-button {
+.app-button.primary-button {
   background-color: var(--primary-gold);
-  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35); /* Daha güçlü gölge */
-  color: #fff; /* Altın buton için beyaz metin */
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35);
 }
-.primary-button:hover:not(:disabled) {
+.app-button.primary-button:hover:not(:disabled) {
   background-color: var(--dark-gold);
   transform: translateY(-4px); 
   box-shadow: 0 10px 25px rgba(212, 175, 55, 0.45);
 }
-.primary-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-  color: #999; /* Disabled primary button için açık gri metin */
-}
 
-.secondary-button {
-  background-color: #6c757d; /* Koyu gri buton */
+.app-button.secondary-button {
+  background-color: #6c757d;
   box-shadow: 0 6px 18px rgba(108, 117, 125, 0.25);
-  color: #fff; /* Gri buton için beyaz metin */
 }
-.secondary-button:hover:not(:disabled) {
+.app-button.secondary-button:hover:not(:disabled) {
   background-color: #5a6268;
   transform: translateY(-4px);
   box-shadow: 0 10px 25px rgba(108, 117, 125, 0.35);
 }
-.secondary-button:disabled {
+
+.app-button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
-  color: #999; /* Disabled secondary button için açık gri metin */
+  color: #999;
+}
+
+.icon-button {
+    font-size: 1.15em; /* İkonu metne göre boyutlandır */
 }
 
 /* Modal Stilleri */
@@ -639,4 +967,101 @@ export default {
     font-size: 1.5rem;
   }
 }
+
+/* ====================================================== */
+/* ADRES LİSTESİ İÇİN STİLLER */
+/* ====================================================== */
+.address-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid var(--medium-grey-border);
+  border-radius: 8px;
+}
+
+.address-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid var(--medium-grey-border);
+  transition: background-color 0.2s ease;
+}
+
+.address-item:last-child {
+  border-bottom: none;
+}
+
+.address-item:hover {
+  background-color: #f9f9f9;
+}
+
+.address-details {
+  flex-grow: 1;
+}
+
+.address-details strong {
+  font-size: 1.1rem;
+  color: var(--dark-text);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.address-details p {
+  margin: 0;
+  color: var(--light-text);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.address-actions {
+  display: flex;
+  gap: 10px;
+  padding-left: 15px; /* Detaylar ve butonlar arasına boşluk */
+}
+
+.action-btn {
+  background: none;
+  border: 1px solid transparent;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem; /* Buton ikonlarını biraz büyütelim */
+  transition: all 0.2s ease;
+}
+
+.action-btn.edit-btn {
+  color: #007bff; /* Mavi */
+}
+.action-btn.edit-btn:hover {
+  background-color: #e7f3ff;
+  border-color: #cce3ff;
+}
+
+.action-btn.delete-btn {
+  color: var(--error-color); /* Kırmızı */
+}
+.action-btn.delete-btn:hover {
+  background-color: #ffebee;
+  border-color: #ffcdd2;
+}
+
+.mt-4 {
+    margin-top: 1.5rem !important;
+}
+
+.form-input[rows] {
+  height: auto;
+  resize: vertical;
+}
+
+/* Select elemanlarının devre dışı bırakıldığında daha iyi görünmesi için ek stil */
+.form-input:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 </style>

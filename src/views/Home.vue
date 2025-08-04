@@ -39,7 +39,7 @@ export default {
       loading: true,
       error: null,
       // YENİ: Backend sunucusunun ana adresini buraya ekliyoruz.
-      apiBaseUrl: 'https://localhost:7135', 
+      apiBaseUrl: 'http://localhost:5294', 
     };
   },
   mounted() {
