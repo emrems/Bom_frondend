@@ -83,16 +83,16 @@
             <label for="notes">Sipariş Notu (Opsiyonel)</label>
           </div>
           
-          <button type="submit" class="btn payment-btn" :disabled="initiatingPayment">
-            <span v-if="initiatingPayment">⏳ Ödeme Hazırlanıyor...</span>
-            <span v-else>🔒 Güvenli Ödeme</span>
+          <button type="submit" class="btn payment-btn" :disabled="isSubmitting">
+            <span v-if="isSubmitting">⏳ Siparişiniz işleniyor...</span>
+            <span v-else>Siparişi Oluştur</span>
           </button>
         </form>
       </div>
       <div v-else key="iframe" class="payment-iframe-container">
-        <div class="section-header">
-          <i class="fas fa-credit-card"></i>
-          <h2>Güvenli Ödeme</h2>
+         <div class="section-header">
+            <i class="fas fa-credit-card"></i>
+            <h2>Güvenli Ödeme</h2>
         </div>
         <p class="payment-info">Ödemenizi tamamlamak için kart bilgilerinizi giriniz.</p>
         <iframe :src="paymentUrl" width="100%" height="500" frameborder="0" class="payment-iframe" title="PayTR Güvenli Ödeme"></iframe>
@@ -115,34 +115,26 @@ import BillingAddressModal from './BillingAddressModal.vue';
 export default {
   name: 'GuestPaymentForm',
   components: { BillingAddressModal },
-  props: { paymentToken: String },
+  props: { 
+    paymentToken: String,
+    isSubmitting: Boolean
+  },
   emits: ['initiate-payment'],
   data() {
     return {
-      initiatingPayment: false,
       shippingAddress: {
-        addressTitle: 'Ev Adresim',
-        contactName: '',
-        phoneNumber: '',
-        city: '',
-        district: '',
-        fullAddress: '',
-        postalCode: ''
+        addressTitle: 'Ev Adresim', contactName: '', phoneNumber: '', city: '',
+        district: '', fullAddress: '', postalCode: ''
       },
       guestInfo: {
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: ''
+        firstName: '', lastName: '', email: '', phone: ''
       },
       isBillingDifferent: false,
       billingAddress: null,
       notes: '',
       showBillingModal: false,
       apiBaseUrl: 'https://localhost:7135',
-      cities: [],
-      districts: [],
-      selectedCityId: '', 
+      cities: [], districts: [], selectedCityId: '', 
     };
   },
   computed: {
@@ -187,23 +179,18 @@ export default {
         this.showBillingModal = true;
         return;
       }
-      this.initiatingPayment = true;
       this.$emit('initiate-payment', {
         shippingAddress: this.shippingAddress,
         billingAddress: this.isBillingDifferent ? this.billingAddress : null,
         notes: this.notes,
         guestInfo: this.guestInfo,
       });
-      setTimeout(() => { if (this.initiatingPayment) { this.initiatingPayment = false; } }, 5000);
     },
   },
   watch: {
     isBillingDifferent(newValue) {
-      if (newValue) {
-        this.showBillingModal = true;
-      } else {
-        this.billingAddress = null;
-      }
+      if (newValue) this.showBillingModal = true;
+      else this.billingAddress = null;
     }
   }
 }
@@ -233,15 +220,15 @@ export default {
 .form-group-checkbox { display: flex; align-items: center; gap: 0.8rem; }
 .form-group-checkbox input { width: 1.2em; height: 1.2em; cursor: pointer; }
 .form-group-checkbox label { margin: 0; font-weight: 500; color: #333; cursor: pointer; font-size: 1rem; }
-.billing-address-form, .guest-info-form { padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; display: flex; flex-direction: column; gap: 1.8rem; background-color: #fdfdfd; }
-.billing-address-form h4, .guest-info-form h4 { margin-top: 0; margin-bottom: 0.5rem; color: #c5a47e; font-size: 1.2rem; font-weight: 700; }
+.guest-info-form { padding: 1.5rem; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 1.8rem; background-color: #fdfdfd; display: flex; flex-direction: column; gap: 1.8rem; }
+.guest-info-form h4 { margin-top: 0; margin-bottom: 0.5rem; color: #c5a47e; font-size: 1.2rem; }
 .guest-info-form p { margin-top: 0; margin-bottom: 0.5rem; color: #777; font-size: 0.9rem;}
 hr { border: none; border-top: 1px solid #f0f0f0; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-10px); }
 .btn { padding: 14px 35px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; background-color: #c5a47e; color: white; box-shadow: 0 8px 20px rgba(197, 164, 126, 0.3); }
 .btn:hover:not(:disabled) { background-color: #b38e64; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(197, 164, 126, 0.4); }
-.payment-btn { padding: 16px; font-size: 1.2rem; margin-top: 1rem; }
+.payment-btn { padding: 16px; font-size: 1.2rem; margin-top: 1rem; width: 100%; }
 .payment-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
 .form-fade-enter-active, .form-fade-leave-active { transition: opacity 0.4s ease; }
 .form-fade-enter-from, .form-fade-leave-to { opacity: 0; }

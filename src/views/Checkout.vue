@@ -18,10 +18,20 @@
         <p>{{ error }}</p>
       </div>
       
+      <div v-else-if="orderSuccess" class="order-success-state">
+        <i class="fas fa-check-circle"></i>
+        <h2>Siparişiniz Alındı!</h2>
+        <p>Sipariş numaranız: <strong>{{ createdOrder.orderNumber }}</strong></p>
+        <p v-if="orderSuccessType === 'guest'">Sipariş detayları e-posta adresinize gönderilmiştir.</p>
+        <p v-else>Siparişiniz hesabınıza tanımlandı. Detayları profilinizden görebilirsiniz.</p>
+        <router-link v-if="orderSuccessType === 'authenticated'" to="/orders" class="btn">Siparişlerim</router-link>
+        <router-link v-else to="/" class="btn">Alışverişe Devam Et</router-link>
+      </div>
+      
       <div v-else-if="!cartItems || cartItems.length === 0" class="empty-cart">
         <EmptyCart />
       </div>
-
+      
       <div v-else class="checkout-content">
         <OrderSummary
           :items="processedCartItems"
@@ -35,12 +45,14 @@
           <AuthenticatedCheckout 
             :paymentToken="paymentToken"
             @initiate-payment="handleAuthenticatedPayment"
+            :isSubmitting="isSubmitting"
           />
         </div>
         <div v-else>
           <GuestPaymentForm
             :paymentToken="paymentToken"
             @initiate-payment="handleGuestPayment"
+            :isSubmitting="isSubmitting"
           />
         </div>
       </div>
@@ -71,18 +83,17 @@ export default {
       shippingCost: 50,
       paymentToken: null,
       apiBaseUrl: 'https://localhost:7135',
+      isSubmitting: false,
+      orderSuccess: false,
+      orderSuccessType: null, // 'guest' veya 'authenticated'
+      createdOrder: null,
     }
   },
   computed: {
     ...mapGetters(['cartItems', 'isAuthenticated', 'user', 'cartId']),
     processedCartItems() {
       if (!this.cartItems) return [];
-      return this.cartItems.map(item => ({
-        ...item,
-        image: item.image && !item.image.startsWith('http')
-          ? `${this.apiBaseUrl}${item.image}`
-          : item.image || 'https://via.placeholder.com/150?text=Resim+Yok'
-      }));
+      return this.cartItems.map(item => ({...item, image: item.image && !item.image.startsWith('http') ? `${this.apiBaseUrl}${item.image}` : item.image || 'https://via.placeholder.com/150?text=Resim+Yok'}));
     },
     subtotal() {
       return this.processedCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -97,10 +108,10 @@ export default {
     this.loading = false;
   },
   methods: {
-    ...mapActions(['fetchCartDetails']),
-    
-    // Misafir kullanıcılar için ödeme başlatma
+    ...mapActions(['fetchCartDetails', 'clearCart']),
+
     async handleGuestPayment(payload) {
+      this.isSubmitting = true;
       const { shippingAddress, billingAddress, notes, guestInfo } = payload;
       const orderData = {
         shippingAddress,
@@ -115,43 +126,71 @@ export default {
 
       try {
         const response = await axios.post(`${this.apiBaseUrl}/api/Orders/place`, orderData);
-        if (response.data && response.data.iframe_token) {
-          this.paymentToken = response.data.iframe_token;
+        if (response.data && response.data.orderNumber) {
+          this.orderSuccess = true;
+          this.orderSuccessType = 'guest';
+          this.createdOrder = response.data;
+          this.clearCart();
         } else {
-          throw new Error("Ödeme token'ı alınamadı.");
+          throw new Error("API'den beklenen sipariş bilgisi alınamadı.");
         }
       } catch (error) {
-        this.error = 'Siparişiniz oluşturulurken bir hata oluştu.';
+        this.error = error.response?.data || 'Siparişiniz oluşturulurken bir hata oluştu.';
+        console.error(error);
+      } finally {
+        this.isSubmitting = false;
       }
     },
 
-    // Giriş yapmış kullanıcılar için ödeme başlatma
     async handleAuthenticatedPayment(payload) {
-        const { shippingAddressId, billingAddressId, notes } = payload;
-        const orderData = {
-            cartId: this.cartId,
-            shippingAddressId,
-            billingAddressId,
-            notes
-        };
+      this.isSubmitting = true;
+      const { shippingAddressId, billingAddressId, notes } = payload;
+      const orderData = {
+        cartId: this.cartId,
+        shippingAddressId,
+        billingAddressId,
+        notes
+      };
 
-        try {
-            const response = await axios.post(`${this.apiBaseUrl}/api/Orders/place-authenticated`, orderData);
-            if (response.data && response.data.iframe_token) {
-              this.paymentToken = response.data.iframe_token;
-            } else {
-              throw new Error("Ödeme token'ı alınamadı.");
-            }
-        } catch (error) {
-            this.error = 'Siparişiniz oluşturulurken bir hata oluştu.';
+      try {
+        const token = this.$store.state.token;
+        if (!token) {
+          this.error = "Giriş yapılmamış veya token bulunamadı.";
+          this.isSubmitting = false;
+          return;
         }
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const response = await axios.post(
+          `${this.apiBaseUrl}/api/Orders/place-authenticated`, 
+          orderData,
+          { headers }
+        );
+
+        if (response.data && response.data.orderNumber) {
+          this.orderSuccess = true;
+          this.orderSuccessType = 'authenticated';
+          this.createdOrder = response.data;
+          this.clearCart();
+        } else if (response.data && response.data.iframe_token) {
+          this.paymentToken = response.data.iframe_token;
+        } else {
+          throw new Error("API'den beklenen yanıt alınamadı.");
+        }
+      } catch (error) {
+        this.error = 'Siparişiniz oluşturulurken bir hata oluştu.';
+        console.error(error);
+      } finally {
+        this.isSubmitting = false;
+      }
     }
   }
-}
+};
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Raleway:wght@400;500;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
 .checkout { padding: 3rem 0; min-height: 80vh; background-color: #f9f9f9; font-family: 'Raleway', sans-serif; }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
@@ -159,11 +198,14 @@ export default {
 .checkout-header h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.8rem; color: #1a1a1a; margin: 0; }
 .back-to-cart { color: #c5a47e; text-decoration: none; font-weight: 600; padding: 8px 16px; border: 2px solid #c5a47e; border-radius: 8px; transition: all 0.3s ease; }
 .back-to-cart:hover { background: #c5a47e; color: white; }
-.loading-state, .error-state, .empty-cart { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; text-align: center; }
+.loading-state, .error-state, .empty-cart, .order-success-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; text-align: center; }
 .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #c5a47e; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .error-state h3 { font-family: 'Cormorant Garamond', serif; color: #1a1a1a; margin-bottom: 1rem; font-size: 2rem; }
 .error-state p { color: #666; margin-bottom: 2rem; font-size: 1.1rem; }
+.order-success-state i { font-size: 5rem; color: #27ae60; margin-bottom: 1.5rem; }
+.order-success-state h2 { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; }
+.order-success-state p { font-size: 1.1rem; color: #555; line-height: 1.6; max-width: 450px; margin: 1rem auto 2rem; }
 .checkout-content { display: grid; grid-template-columns: 450px 1fr; gap: 3rem; align-items: start; }
 .btn { padding: 14px 35px; font-size: 1.15rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; background-color: #c5a47e; color: white; box-shadow: 0 8px 20px rgba(197, 164, 126, 0.3); text-decoration: none; }
 .btn:hover { background-color: #b38e64; transform: translateY(-2px); }

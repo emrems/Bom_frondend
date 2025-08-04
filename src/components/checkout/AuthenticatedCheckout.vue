@@ -6,8 +6,8 @@
     </div>
 
     <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Adresleriniz yükleniyor...</p>
+        <div class="spinner"></div>
+        <p>Adresleriniz yükleniyor...</p>
     </div>
     <div v-else-if="error" class="error-state">{{ error }}</div>
 
@@ -22,8 +22,8 @@
           </select>
         </div>
         <div class="form-group-checkbox">
-          <input type="checkbox" id="isBillingDifferentAuth" v-model="isBillingDifferent">
-          <label for="isBillingDifferentAuth">Fatura adresim, teslimat adresimden farklı.</label>
+            <input type="checkbox" id="isBillingDifferentAuth" v-model="isBillingDifferent">
+            <label for="isBillingDifferentAuth">Fatura adresim, teslimat adresimden farklı.</label>
         </div>
         <div v-if="isBillingDifferent" class="form-group">
           <label for="billingAddress">Fatura Adresi Seçin</label>
@@ -35,140 +35,94 @@
         </div>
       </div>
 
-      <button v-if="addresses.length > 0" @click="showAddressForm = true" class="btn-link">
-        + Yeni Adres Ekle
+      <button v-if="!showAddressForm" @click="showAddressForm = true" class="btn-link">
+        {{ addresses.length > 0 ? '+ Yeni Adres Ekle' : 'Adres Ekle' }}
       </button>
 
-      <div v-if="showAddressForm" class="modal-overlay">
-        <div class="modal">
-          <h3>Yeni Adres Ekle</h3>
+      <transition name="fade">
+        <div v-if="showAddressForm" class="new-address-form">
+          <hr v-if="addresses.length > 0">
+          <h4>{{ addresses.length > 0 ? 'Yeni Adres Ekle' : 'Lütfen Teslimat Adresi Girin' }}</h4>
+          
           <div class="form-group">
-            <label>Adres Başlığı *</label>
-            <input v-model="newAddress.addressTitle" type="text" placeholder="Ev Adresim" />
+              <label>Adres Başlığı *</label>
+              <input v-model="newAddress.addressTitle" type="text" placeholder="Ev Adresim"/>
           </div>
-          <div class="form-group">
+           <div class="form-group">
             <label>Ad Soyad *</label>
             <input v-model="newAddress.contactName" type="text" />
           </div>
-          <div class="form-group">
+           <div class="form-group">
             <label>Telefon *</label>
             <input v-model="newAddress.phoneNumber" type="tel" />
-          </div>
-          <div class="form-group">
-            <label>İl Seçin *</label>
-            <select v-model="newAddress.cityId" @change="fetchDistricts">
-              <option disabled value="">İl seçin</option>
-              <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }}</option>
-            </select>
-          </div>
-          <div class="form-group" v-if="districts.length > 0">
-            <label>İlçe Seçin *</label>
-            <select v-model="newAddress.districtId">
-              <option disabled value="">İlçe seçin</option>
-              <option v-for="district in districts" :key="district.id" :value="district.id">{{ district.name }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Posta Kodu *</label>
-            <input v-model="newAddress.postalCode" type="text" placeholder="34000" />
           </div>
           <div class="form-group">
             <label>Açık Adres *</label>
             <textarea v-model="newAddress.fullAddress" rows="3"></textarea>
           </div>
-
+          
           <div class="form-actions">
             <button @click="saveNewAddress" class="btn save-address-btn" :disabled="isSaving">
-              {{ isSaving ? 'Kaydediliyor...' : 'Kaydet' }}
+                {{ isSaving ? 'Kaydediliyor...' : 'Yeni Adresi Kaydet' }}
             </button>
-            <button @click="showAddressForm = false" class="btn-secondary">İptal</button>
+            <button v-if="addresses.length > 0" @click="showAddressForm = false" class="btn-secondary">İptal</button>
           </div>
         </div>
-      </div>
-
+      </transition>
+      
       <div class="form-group" style="margin-top: 2rem;">
         <label for="notesAuth">Sipariş Notu (Opsiyonel)</label>
         <textarea id="notesAuth" v-model="notes" rows="2"></textarea>
       </div>
 
-      <button @click="submitOrder" class="btn payment-btn" :disabled="!selectedShippingId || isSubmitting">
-        {{ isSubmitting ? 'Sipariş oluşturuluyor...' : 'Siparişi Oluştur' }}
-      </button>
-
-      <OrderSuccess v-if="orderStatus === 'success'" />
-      <OrderError v-if="orderStatus === 'error'" />
+      <button @click="submitOrder" class="btn payment-btn" :disabled="!selectedShippingId && !showAddressForm">siparişi oluştur</button>
     </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-import OrderSuccess from '@/components/success/ordersSuccess/OrderSuccess.vue';
-import OrderError from '@/components/error/ordersError/OrderError.vue';
+
 
 export default {
   name: 'AuthenticatedCheckout',
-  components: { OrderSuccess, OrderError },
   props: ['paymentToken'],
   emits: ['initiate-payment'],
   data() {
     return {
-      loading: true,
-      error: null,
+      loading: true, error: null,
       addresses: [],
       selectedShippingId: null,
       selectedBillingId: null,
       isBillingDifferent: false,
       showAddressForm: false,
       isSaving: false,
-      isSubmitting: false,
-      orderStatus: null,
-      cities: [],
-      districts: [],
       newAddress: {
-        addressTitle: '',
-        contactName: '',
-        phoneNumber: '',
-        cityId: '',
-        districtId: '',
-        fullAddress: '',
-        postalCode: ''
+        addressTitle: '', contactName: '', phoneNumber: '', city: 'İstanbul',
+        district: 'Kadıköy', fullAddress: '', postalCode: '34700'
       },
       notes: '',
-      apiBaseUrl: 'https://localhost:7135'
+      apiBaseUrl: 'https://localhost:7135',
     };
   },
+ 
+  computed: {}, 
   async created() {
-    await this.fetchCities();
     await this.fetchAddresses();
   },
   methods: {
-    async fetchCities() {
-      try {
-        const response = await axios.get(`${this.apiBaseUrl}/api/Locations/cities/1`);
-        this.cities = response.data;
-      } catch (e) {
-        console.error('İller alınamadı:', e);
-      }
-    },
-    async fetchDistricts() {
-      if (!this.newAddress.cityId) return;
-      try {
-        const response = await axios.get(`${this.apiBaseUrl}/api/Locations/districts/${this.newAddress.cityId}`);
-        this.districts = response.data;
-      } catch (e) {
-        console.error('İlçeler alınamadı:', e);
-      }
-    },
     async fetchAddresses() {
       this.loading = true;
       try {
+      
         const token = this.$store.state.token;
-        if (!token) throw new Error("Token bulunamadı.");
-
+        if (!token) {
+            throw new Error("Kullanıcı token'ı bulunamadı. Lütfen giriş yapın.");
+        }
+        
         const headers = { 'Authorization': `Bearer ${token}` };
         const response = await axios.get(`${this.apiBaseUrl}/api/Addresses`, { headers });
-
+        
         this.addresses = response.data;
         if (this.addresses.length > 0) {
           this.selectedShippingId = this.addresses[0].id;
@@ -177,7 +131,8 @@ export default {
           this.showAddressForm = true;
         }
       } catch (e) {
-        this.error = "Adresler yüklenemedi.";
+        this.error = "Adresleriniz yüklenemedi. Lütfen tekrar giriş yapmayı deneyin.";
+        console.error("Adres çekme hatası:", e);
       } finally {
         this.loading = false;
       }
@@ -186,49 +141,32 @@ export default {
       this.isSaving = true;
       try {
         const headers = { 'Authorization': `Bearer ${this.$store.state.token}` };
-
-        const city = this.cities.find(c => c.id === this.newAddress.cityId)?.name || '';
-        const district = this.districts.find(d => d.id === this.newAddress.districtId)?.name || '';
-
-        const payload = {
-          ...this.newAddress,
-          city,
-          district
-        };
-
-        await axios.post(`${this.apiBaseUrl}/api/Addresses`, payload, { headers });
+        await axios.post(`${this.apiBaseUrl}/api/Addresses`, this.newAddress, { headers });
         await this.fetchAddresses();
         this.showAddressForm = false;
-      } catch (e) {
-        this.orderStatus = 'error';
+      } catch(e) {
+          alert("Yeni adres kaydedilirken bir hata oluştu.");
       } finally {
-        this.isSaving = false;
+          this.isSaving = false;
       }
     },
-    async submitOrder() {
-      if (!this.selectedShippingId) return;
-
-      this.isSubmitting = true;
-      try {
-        const headers = { 'Authorization': `Bearer ${this.$store.state.token}` };
-        const payload = {
-          cartId: this.$store.state.cartId,
-          shippingAddressId: this.selectedShippingId,
-          billingAddressId: this.isBillingDifferent ? this.selectedBillingId : this.selectedShippingId,
-          notes: this.notes
-        };
-
-        await axios.post(`${this.apiBaseUrl}/api/Orders/place-authenticated`, payload, { headers });
-        this.orderStatus = 'success';
-      } catch (e) {
-        this.orderStatus = 'error';
-        console.error("Sipariş oluşturma hatası:", e);
-      } finally {
-        this.isSubmitting = false;
+    submitOrder() {
+      if (!this.selectedShippingId) {
+        if (this.showAddressForm) {
+            alert("Lütfen önce yeni adresi kaydedin veya işlemi iptal edin.");
+        } else {
+            alert("Lütfen bir teslimat adresi seçin.");
+        }
+        return;
       }
+      this.$emit('initiate-payment', {
+        shippingAddressId: this.selectedShippingId,
+        billingAddressId: this.isBillingDifferent ? this.selectedBillingId : this.selectedShippingId,
+        notes: this.notes
+      });
     }
   }
-};
+}
 </script>
 
 <style scoped>
@@ -257,23 +195,5 @@ hr { border: none; border-top: 1px solid #f0f0f0; margin: 2rem 0; }
 .form-actions { display: flex; gap: 1rem; }
 .btn-secondary { background-color: #f0f0f0; color: #333; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-10px); }.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-.modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-}
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-10px); }
 </style>

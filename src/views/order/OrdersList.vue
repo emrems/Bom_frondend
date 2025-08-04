@@ -4,9 +4,17 @@
     <div class="orders-header">
       <h1 class="orders-title">Sipariş Geçmişim</h1>
       <div class="orders-filter">
-        <select v-model="statusFilter" @change="filterOrders" class="filter-select">
+        <select
+          v-model="statusFilter"
+          @change="filterOrders"
+          class="filter-select"
+        >
           <option value="">Tüm Durumlar</option>
-          <option v-for="status in orderStatuses" :key="status.value" :value="status.value">
+          <option
+            v-for="status in orderStatuses"
+            :key="status.value"
+            :value="status.value"
+          >
             {{ status.label }}
           </option>
         </select>
@@ -45,9 +53,11 @@
           >
             <div class="order-header">
               <span class="order-number">#{{ order.orderNumber }}</span>
-              <span class="order-status">{{ getStatusText(order.orderStatus) }}</span>
+              <span class="order-status">{{
+                getStatusText(order.orderStatus)
+              }}</span>
             </div>
-            
+
             <div class="order-details">
               <div class="order-date">
                 <i class="far fa-calendar-alt"></i>
@@ -62,7 +72,7 @@
                 {{ order.itemCount }} ürün
               </div>
             </div>
-            
+
             <div class="order-actions">
               <button @click.stop="goToDetail(order.id)" class="detail-button">
                 Detayları Gör <i class="fas fa-chevron-right"></i>
@@ -73,20 +83,20 @@
 
         <!-- Sayfalama -->
         <div v-if="totalPages > 1" class="pagination">
-          <button 
-            @click="prevPage" 
+          <button
+            @click="prevPage"
             :disabled="currentPage === 1"
             class="page-button"
           >
             <i class="fas fa-chevron-left"></i>
           </button>
-          
+
           <span class="page-info">
             Sayfa {{ currentPage }} / {{ totalPages }}
           </span>
-          
-          <button 
-            @click="nextPage" 
+
+          <button
+            @click="nextPage"
             :disabled="currentPage === totalPages"
             class="page-button"
           >
@@ -101,7 +111,9 @@
         </div>
         <h3>Henüz siparişiniz bulunmamaktadır</h3>
         <p>Alışverişe başlamak için mağazamızı ziyaret edebilirsiniz.</p>
-        <router-link to="/products" class="shop-button">Alışverişe Başla</router-link>
+        <router-link to="/products" class="shop-button"
+          >Alışverişe Başla</router-link
+        >
       </div>
     </div>
   </div>
@@ -123,16 +135,16 @@ export default {
       currentPage: 1,
       itemsPerPage: 5,
       orderStatuses: [
-        { value: "Pending", label: "Beklemede" },
-        { value: "Processing", label: "Hazırlanıyor" },
-        { value: "Shipped", label: "Kargolandı" },
-        { value: "Delivered", label: "Teslim Edildi" },
-        { value: "Cancelled", label: "İptal Edildi" }
-      ]
+        { value: "PendingApproval", label: "Onay Bekliyor" },
+        { value: "Approved", label: "Onaylandı" },
+        { value: "Rejected", label: "Reddedildi" },
+        { value: "Shipped", label: "Kargoya Verildi" },
+        { value: "Cancelled", label: "İptal Edildi" },
+      ],
     };
   },
   computed: {
-    ...mapState(['token']),
+    ...mapState(["token"]),
     totalPages() {
       return Math.ceil(this.filteredOrders.length / this.itemsPerPage);
     },
@@ -140,13 +152,13 @@ export default {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       return this.filteredOrders.slice(start, end);
-    }
+    },
   },
   methods: {
     async fetchOrders() {
       this.loading = true;
       this.error = null;
-      
+
       try {
         if (!this.token) {
           throw new Error("Oturum açmanız gerekiyor");
@@ -154,21 +166,23 @@ export default {
 
         const response = await axios.get("https://localhost:7135/api/Orders", {
           headers: {
-            Authorization: `Bearer ${this.token}`
-          }
+            Authorization: `Bearer ${this.token}`,
+          },
         });
-        
-        this.orders = response.data.map(order => ({
+
+        this.orders = response.data.map((order) => ({
           ...order,
-          itemCount: order.items ? order.items.length : 0
+          itemCount: order.items ? order.items.length : 0,
         }));
-        
+        console.log("gelen ürünler", response.data);
+
         this.filterOrders();
       } catch (error) {
         console.error("Siparişler alınırken hata:", error);
-        this.error = error.response?.data?.message || 
-                    error.message || 
-                    "Sipariş bilgileri alınırken bir hata oluştu";
+        this.error =
+          error.response?.data?.message ||
+          error.message ||
+          "Sipariş bilgileri alınırken bir hata oluştu";
       } finally {
         this.loading = false;
       }
@@ -179,7 +193,7 @@ export default {
         this.filteredOrders = [...this.orders];
       } else {
         this.filteredOrders = this.orders.filter(
-          order => order.orderStatus === this.statusFilter
+          (order) => order.orderStatus === this.statusFilter
         );
       }
       this.currentPage = 1;
@@ -190,7 +204,7 @@ export default {
     },
 
     getStatusText(status) {
-      const found = this.orderStatuses.find(s => s.value === status);
+      const found = this.orderStatuses.find((s) => s.value === status);
       return found ? found.label : status;
     },
 
@@ -199,14 +213,14 @@ export default {
     },
 
     formatDate(dateStr) {
-      const options = { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      const options = {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       };
-      return new Date(dateStr).toLocaleDateString('tr-TR', options);
+      return new Date(dateStr).toLocaleDateString("tr-TR", options);
     },
 
     refreshOrders() {
@@ -216,20 +230,20 @@ export default {
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     },
 
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
-    }
+    },
   },
   mounted() {
     this.fetchOrders();
-  }
+  },
 };
 </script>
 
@@ -239,7 +253,8 @@ export default {
   max-width: 800px;
   margin: 2rem auto;
   padding: 0 1rem;
-  font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+  font-family: "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    sans-serif;
 }
 
 /* Başlık ve Filtre */
@@ -503,8 +518,12 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state {
@@ -540,7 +559,7 @@ export default {
   .order-details {
     grid-template-columns: 1fr;
   }
-  
+
   .orders-header {
     flex-direction: column;
     align-items: flex-start;
