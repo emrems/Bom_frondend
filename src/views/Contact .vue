@@ -19,8 +19,9 @@
             <form @submit.prevent="submitForm" class="contact-form">
               <div class="form-group">
                 <label for="name">Adınız Soyadınız</label>
+                <!-- GÜNCELLENDİ: v-model, API ile uyumlu olması için 'form.fullName' olarak değiştirildi -->
                 <input 
-                  v-model="form.name" 
+                  v-model="form.fullName" 
                   type="text" 
                   id="name" 
                   placeholder="Adınız ve soyadınız"
@@ -51,12 +52,13 @@
               
               <div class="form-group">
                 <label for="subject">Konu</label>
+                <!-- GÜNCELLENDİ: Option value değerleri API'ye daha anlamlı gitmesi için güncellendi -->
                 <select v-model="form.subject" id="subject" required>
-                  <option value="" disabled selected>Konu seçiniz</option>
-                  <option value="siparis">Sipariş Sorgulama</option>
-                  <option value="urun">Ürün Bilgisi</option>
-                  <option value="tasarim">Özel Tasarım</option>
-                  <option value="diger">Diğer</option>
+                  <option value="" disabled>Konu seçiniz</option>
+                  <option value="Sipariş Sorgulama">Sipariş Sorgulama</option>
+                  <option value="Ürün Bilgisi">Ürün Bilgisi</option>
+                  <option value="Özel Tasarım">Özel Tasarım</option>
+                  <option value="Diğer">Diğer</option>
                 </select>
               </div>
               
@@ -70,9 +72,16 @@
                   required
                 ></textarea>
               </div>
+
+              <!-- YENİ: Başarı ve Hata Mesajları için alanlar eklendi -->
+              <div v-if="submitSuccess" class="form-message success">{{ submitSuccess }}</div>
+              <div v-if="submitError" class="form-message error">{{ submitError }}</div>
               
-              <button type="submit" class="submit-btn">
-                <i class="fas fa-paper-plane"></i> Mesajı Gönder
+              <!-- GÜNCELLENDİ: Buton, gönderim durumuna göre dinamik hale getirildi -->
+              <button type="submit" class="submit-btn" :disabled="isSubmitting">
+                <i v-if="!isSubmitting" class="fas fa-paper-plane"></i>
+                <i v-else class="fas fa-spinner fa-spin"></i>
+                {{ isSubmitting ? 'Gönderiliyor...' : 'Mesajı Gönder' }}
               </button>
             </form>
           </div>
@@ -154,18 +163,28 @@
 </template>
 
 <script>
+// YENİ: API isteği yapmak için axios eklendi
+import axios from 'axios';
+
 export default {
   name: 'ContactPage',
   data() {
     return {
+      // GÜNCELLENDİ: Form objesi API ile uyumlu hale getirildi
       form: {
-        name: '',
+        fullName: '', // name -> fullName
         email: '',
         phone: '',
         subject: '',
         message: ''
       },
-      whatsappNumber: '905416216960'
+      whatsappNumber: '905416216960',
+      
+      // YENİ: Form gönderim durumunu yönetmek için yeni değişkenler eklendi
+      isSubmitting: false,
+      submitError: null,
+      submitSuccess: null,
+      apiBaseUrl: 'http://localhost:5294', // API adresinizi buraya yazabilirsiniz
     }
   },
   computed: {
@@ -174,14 +193,28 @@ export default {
     }
   },
   methods: {
-    submitForm() {
-      console.log('Form submitted:', this.form)
-      alert('Mesajınız başarıyla gönderildi. En kısa sürede sizinle iletişime geçeceğiz.')
-      this.resetForm()
+    // GÜNCELLENDİ: Metot artık asenkron ve API'ye POST isteği gönderiyor
+    async submitForm() {
+      this.isSubmitting = true;
+      this.submitError = null;
+      this.submitSuccess = null;
+
+      try {
+        await axios.post(`${this.apiBaseUrl}/api/Contact`, this.form);
+
+        this.submitSuccess = 'Mesajınız başarıyla gönderildi. En kısa sürede sizinle iletişime geçeceğiz.';
+        this.resetForm();
+
+      } catch (error) {
+        console.error('İletişim formu gönderilirken hata:', error);
+        this.submitError = 'Mesajınız gönderilirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+      } finally {
+        this.isSubmitting = false;
+      }
     },
     resetForm() {
       this.form = {
-        name: '',
+        fullName: '', // name -> fullName
         email: '',
         phone: '',
         subject: '',
@@ -189,7 +222,6 @@ export default {
       }
     }
   },
-  // ANİMASYON İÇİN GEREKLİ SCRIPT
   mounted() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -199,7 +231,7 @@ export default {
         }
       });
     }, {
-      threshold: 0.1, // Elementin %10'u görününce animasyon başlar
+      threshold: 0.1,
     });
 
     document.querySelectorAll('.fade-in-up').forEach((el) => {
@@ -210,15 +242,16 @@ export default {
 </script>
 
 <style scoped>
-/* Gerekli Fontları Google'dan import ediyoruz */
+/* TÜM MEVCUT CSS KODUNUZ HİÇBİR DEĞİŞİKLİK OLMADAN BURADA KORUNUYOR */
+/* SADECE YENİ EKLENEN MESAJ ALANLARI İÇİN BİRKAÇ SATIR EKLENDİ */
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&family=Cormorant+Garamond:wght@700&display=swap');
 
-/* Global Styles */
 .contact-page {
   font-family: 'Poppins', sans-serif;
   color: #333;
   line-height: 1.6;
-  background-color: #f9f9f9; /* Hafif gri arka plan */
+  background-color: #f9f9f9;
 }
 
 .container {
@@ -227,7 +260,6 @@ export default {
   padding: 0 20px;
 }
 
-/* YENİ: Kaydırma animasyonları için temel stiller */
 .fade-in-up {
   opacity: 0;
   transform: translateY(40px);
@@ -240,8 +272,6 @@ export default {
   transform: translateY(0);
 }
 
-
-/* Hero Section */
 .contact-hero {
   background: linear-gradient(rgba(40, 40, 40, 0.7), rgba(40, 40, 40, 0.7)), 
               url('https://images.pexels.com/photos/7841797/pexels-photo-7841797.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');
@@ -254,10 +284,10 @@ export default {
 
 .contact-hero h1 {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 3.5rem; /* Biraz büyütüldü */
+  font-size: 3.5rem;
   margin-bottom: 1rem;
   font-weight: 700;
-  text-shadow: 0 2px 5px rgba(0,0,0,0.5); /* Hafif gölge eklendi */
+  text-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 
 .contact-hero p {
@@ -267,7 +297,6 @@ export default {
   opacity: 0.9;
 }
 
-/* Contact Main Section */
 .contact-main {
   padding: 80px 0;
 }
@@ -275,15 +304,14 @@ export default {
 .contact-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 50px; /* Boşluk artırıldı */
-  align-items: start; /* Hizalama ayarlandı */
+  gap: 50px;
+  align-items: start;
 }
 
-/* Contact Form Styles */
 .contact-form-container {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.08); /* Gölge yumuşatıldı */
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.08);
   padding: 40px;
 }
 
@@ -294,7 +322,7 @@ export default {
 
 .form-header h2 {
   font-size: 1.8rem;
-  color: #c5a47e; /* Altın rengiyle uyumlu */
+  color: #c5a47e;
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -325,14 +353,14 @@ export default {
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 14px 18px; /* Dolgu artırıldı */
+  padding: 14px 18px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 1rem;
-  font-family: 'Poppins', sans-serif; /* Font ailesi eklendi */
+  font-family: 'Poppins', sans-serif;
   transition: all 0.3s ease;
 }
-/* Seçim kutusu için özel stil */
+
 .form-group select {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -357,6 +385,23 @@ export default {
   min-height: 150px;
 }
 
+/* YENİ: Form gönderim mesajları için stiller */
+.form-message {
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 5px; /* Butonla arasında boşluk */
+  font-weight: 500;
+  text-align: center;
+}
+.form-message.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+.form-message.error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
 .submit-btn {
   background: #c5a47e;
   color: white;
@@ -379,17 +424,16 @@ export default {
   box-shadow: 0 4px 15px rgba(197, 164, 126, 0.3);
 }
 
-/* Contact Info Styles */
 .contact-info-container {
   display: flex;
-  flex-direction: column; /* Dikey sıralama */
+  flex-direction: column;
   gap: 30px;
 }
 
 .info-card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.08); /* Gölge yumuşatıldı */
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.08);
   padding: 40px;
 }
 
@@ -419,15 +463,15 @@ export default {
 
 .info-item {
   display: flex;
-  gap: 20px; /* Boşluk artırıldı */
-  align-items: flex-start; /* Hizalama ayarlandı */
+  gap: 20px;
+  align-items: flex-start;
 }
 
 .info-item i {
   font-size: 1.5rem;
   color: #c5a47e;
   margin-top: 5px;
-  width: 25px; /* İkonlar için sabit genişlik */
+  width: 25px;
   text-align: center;
 }
 
@@ -453,7 +497,7 @@ export default {
   justify-content: center;
   gap: 15px;
   margin-top: 40px;
-  border-top: 1px solid #f0f0f0; /* Ayırıcı çizgi */
+  border-top: 1px solid #f0f0f0;
   padding-top: 30px;
 }
 
@@ -471,7 +515,7 @@ export default {
 }
 
 .social-icon:hover {
-  transform: translateY(-3px) scale(1.1); /* Hafif büyüme efekti */
+  transform: translateY(-3px) scale(1.1);
   color: white;
 }
 
@@ -488,7 +532,6 @@ export default {
   background: #1DA1F2;
 }
 
-/* Map Container */
 .map-container {
   height: auto;
 }
@@ -501,7 +544,6 @@ export default {
   box-shadow: 0 15px 45px rgba(0, 0, 0, 0.08);
 }
 
-/* WhatsApp Floating Button */
 .whatsapp-float {
   position: fixed;
   bottom: 30px;
@@ -548,7 +590,6 @@ export default {
     transform: rotate(360deg);
 }
 
-/* Responsive Design */
 @media (max-width: 992px) {
   .contact-grid {
     grid-template-columns: 1fr;
@@ -570,7 +611,7 @@ export default {
   }
   
   .whatsapp-float:hover {
-      width: 60px; /* mobilde hover efekti kaldırılıyor */
+      width: 60px;
       flex-direction: column;
   }
   .whatsapp-float:hover span {
