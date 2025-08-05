@@ -139,12 +139,11 @@ export default {
         { value: "Approved", label: "Onaylandı" },
         { value: "Rejected", label: "Reddedildi" },
         { value: "Shipped", label: "Kargoya Verildi" },
+        { value: "Delivered", label: "Teslim Edildi" },
         { value: "Cancelled", label: "İptal Edildi" },
         { value: "ReturnRequested", label: "İade Talebi" },
         { value: "ReturnApproved", label: "İade Onaylandı" },
-        { value: "ReturnRejected", label: "İade Reddedildi" },
-        {value:"Delivered",label:"teslim edildi"}
-
+        { value: "ReturnRejected", label: "İade Reddedildi" }
       ],
     };
   },
@@ -169,7 +168,7 @@ export default {
           throw new Error("Oturum açmanız gerekiyor");
         }
 
-        const response = await axios.get("http://localhost:5294/api/Orders", {
+        const response = await axios.get("https://localhost:7135/api/Orders", {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
@@ -179,15 +178,16 @@ export default {
           ...order,
           itemCount: order.items ? order.items.length : 0,
         }));
-        console.log("gelen ürünler", response.data);
-
+        
         this.filterOrders();
+       // this.showSuccessMessage("Sipariş bilgileri başarıyla yüklendi");
       } catch (error) {
         console.error("Siparişler alınırken hata:", error);
         this.error =
           error.response?.data?.message ||
           error.message ||
           "Sipariş bilgileri alınırken bir hata oluştu";
+        this.showErrorMessage(this.error);
       } finally {
         this.loading = false;
       }
@@ -245,6 +245,15 @@ export default {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     },
+    
+    // Basit mesaj fonksiyonları
+    showSuccessMessage(message) {
+      alert(`✅ ${message}`);
+    },
+    
+    showErrorMessage(message) {
+      alert(`❌ ${message}`);
+    }
   },
   mounted() {
     this.fetchOrders();
@@ -254,71 +263,6 @@ export default {
 
 <style scoped>
 /* Temel Stiller */
-/* Durum Renkleri */
-.status-pendingapproval {
-  border-left-color: #f39c12;
-}
-.status-pendingapproval .order-status {
-  background-color: #fef5e6;
-  color: #f39c12;
-}
-
-.status-approved {
-  border-left-color: #3498db;
-}
-.status-approved .order-status {
-  background-color: #e8f4fc;
-  color: #3498db;
-}
-
-.status-rejected {
-  border-left-color: #e74c3c;
-}
-.status-rejected .order-status {
-  background-color: #fdedec;
-  color: #e74c3c;
-}
-
-.status-shipped {
-  border-left-color: #9b59b6;
-}
-.status-shipped .order-status {
-  background-color: #f5eef8;
-  color: #9b59b6;
-}
-
-.status-cancelled {
-  border-left-color: #7f8c8d;
-}
-.status-cancelled .order-status {
-  background-color: #ecf0f1;
-  color: #7f8c8d;
-}
-
-/* İade Durumları */
-.status-returnrequested {
-  border-left-color: #e67e22;
-}
-.status-returnrequested .order-status {
-  background-color: #fdf2e9;
-  color: #e67e22;
-}
-
-.status-returnapproved {
-  border-left-color: #2ecc71;
-}
-.status-returnapproved .order-status {
-  background-color: #e8f8f0;
-  color: #2ecc71;
-}
-
-.status-returnrejected {
-  border-left-color: #c0392b;
-}
-.status-returnrejected .order-status {
-  background-color: #f9ebea;
-  color: #c0392b;
-}
 .orders-container {
   max-width: 800px;
   margin: 2rem auto;
@@ -459,20 +403,28 @@ export default {
 }
 
 /* Durum Renkleri */
-.status-pending {
+.status-pendingapproval {
   border-left-color: #f39c12;
 }
-.status-pending .order-status {
+.status-pendingapproval .order-status {
   background-color: #fef5e6;
   color: #f39c12;
 }
 
-.status-processing {
+.status-approved {
   border-left-color: #3498db;
 }
-.status-processing .order-status {
+.status-approved .order-status {
   background-color: #e8f4fc;
   color: #3498db;
+}
+
+.status-rejected {
+  border-left-color: #e74c3c;
+}
+.status-rejected .order-status {
+  background-color: #fdedec;
+  color: #e74c3c;
 }
 
 .status-shipped {
@@ -492,11 +444,35 @@ export default {
 }
 
 .status-cancelled {
-  border-left-color: #e74c3c;
+  border-left-color: #7f8c8d;
 }
 .status-cancelled .order-status {
-  background-color: #fdedec;
-  color: #e74c3c;
+  background-color: #ecf0f1;
+  color: #7f8c8d;
+}
+
+.status-returnrequested {
+  border-left-color: #e67e22;
+}
+.status-returnrequested .order-status {
+  background-color: #fdf2e9;
+  color: #e67e22;
+}
+
+.status-returnapproved {
+  border-left-color: #2ecc71;
+}
+.status-returnapproved .order-status {
+  background-color: #e8f8f0;
+  color: #2ecc71;
+}
+
+.status-returnrejected {
+  border-left-color: #c0392b;
+}
+.status-returnrejected .order-status {
+  background-color: #f9ebea;
+  color: #c0392b;
 }
 
 /* Sayfalama */

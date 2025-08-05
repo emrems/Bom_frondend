@@ -1,12 +1,10 @@
 <template>
   <div class="order-detail-container">
-    <!-- Yükleme Durumu -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>Sipariş detayları yükleniyor...</p>
     </div>
 
-    <!-- Hata Durumu -->
     <div v-if="error" class="error-state">
       <i class="fas fa-exclamation-circle"></i>
       <h3>Sipariş bilgileri alınamadı</h3>
@@ -16,15 +14,13 @@
       </button>
     </div>
 
-    <!-- Sipariş Detayları -->
     <div v-if="order" class="order-detail-card">
-      <!-- Başlık ve Genel Bilgiler -->
       <div class="order-header">
         <div class="order-title">
           <h1>Sipariş Detayları</h1>
           <span class="order-number">#{{ order.orderNumber }}</span>
         </div>
-        <div v-if="order.orderStatus" class="order-status-badge" :class="getStatusClass(order.orderStatus)">
+        <div class="order-status-badge" :class="getStatusClass(order.orderStatus)">
           {{ getStatusText(order.orderStatus) }}
         </div>
       </div>
@@ -40,7 +36,17 @@
         </div>
       </div>
 
-      <!-- Adres Bilgileri -->
+      <div v-if="order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered'" class="shipping-info">
+        <div class="shipping-item">
+          <i class="fas fa-truck"></i>
+          <span><strong>Kargo Firması:</strong> {{ order.shippingProvider || 'Belirtilmemiş' }}</span>
+        </div>
+        <div class="shipping-item">
+          <i class="fas fa-barcode"></i>
+          <span><strong>Takip Numarası:</strong> {{ order.trackingNumber || 'Belirtilmemiş' }}</span>
+        </div>
+      </div>
+
       <div class="address-section">
         <div v-if="order.shippingAddress" class="address-card">
           <div class="address-header">
@@ -79,7 +85,6 @@
         </div>
       </div>
 
-      <!-- Sipariş Öğeleri -->
       <div v-if="order.items && order.items.length" class="order-items-section">
         <h3><i class="fas fa-box-open"></i> Sipariş Öğeleri</h3>
         <div class="order-items-table">
@@ -105,8 +110,7 @@
         </div>
       </div>
 
-      <!-- Özet Bilgiler -->
-      <div v-if="order" class="order-summary">
+      <div class="order-summary">
         <div v-if="order.subTotal !== undefined" class="summary-row">
           <span>Ara Toplam:</span>
           <span>{{ formatPrice(order.subTotal) }}</span>
@@ -119,151 +123,217 @@
           <span>Vergiler:</span>
           <span>{{ formatPrice(order.taxAmount) }}</span>
         </div>
-        <div v-if="order.totalAmount !== undefined" class="summary-row total">
+        <div class="summary-row total">
           <span>Toplam:</span>
           <span>{{ formatPrice(order.totalAmount) }}</span>
         </div>
       </div>
 
-      <!-- İşlem Butonları -->
       <div class="action-buttons">
-        <button @click="$router.back()" class="back-button">
+        <button @click="router.back()" class="back-button">
           <i class="fas fa-arrow-left"></i> Siparişlerime Dön
         </button>
         <button 
           v-if="canCancel" 
-          @click="cancelOrder" 
+          @click="showCancelModal" 
           class="cancel-button"
         >
           <i class="fas fa-times-circle"></i> Siparişi İptal Et
         </button>
         <button 
           v-if="canRequestReturn" 
-          @click="requestReturn" 
+          @click="showReturnModal" 
           class="return-button"
         >
           <i class="fas fa-undo"></i> İade Talebi Oluştur
         </button>
       </div>
     </div>
+
+    <div v-if="showCancelDialog" class="modal-overlay">
+      <div class="modal-content">
+        <h3>Sipariş İptali</h3>
+        <p>Siparişi iptal etme nedeninizi belirtin:</p>
+        <textarea v-model="cancelReason" placeholder="İptal nedeni..." rows="4"></textarea>
+        <div class="modal-actions">
+          <button @click="showCancelDialog = false" class="modal-cancel">Vazgeç</button>
+          <button @click="cancelOrder" class="modal-confirm">İptal Et</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showReturnDialog" class="modal-overlay">
+      <div class="modal-content">
+        <h3>İade Talebi</h3>
+        <p>İade talebi oluşturma nedeninizi belirtin:</p>
+        <textarea v-model="returnReason" placeholder="İade nedeni..." rows="4"></textarea>
+        <div class="modal-actions">
+          <button @click="showReturnDialog = false" class="modal-cancel">Vazgeç</button>
+          <button @click="requestReturn" class="modal-confirm">Gönder</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import { mapState } from 'vuex';
+import { useStore } from 'vuex';
+import { useRoute, useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 
-export default {
-  name: 'OrderDetail',
-  data() {
-    return {
-      order: null,
-      loading: false,
-      error: null,
-      orderStatuses: [
-        { value: 'PendingApproval', label: 'Onay Bekliyor' },
-        { value: 'Approved', label: 'Onaylandı' },
-        { value: 'Rejected', label: 'Reddedildi' },
-        { value: 'Shipped', label: 'Kargoya Verildi' },
-        { value: 'Delivered', label: 'Teslim Edildi' },
-        { value: 'Cancelled', label: 'İptal Edildi' },
-        { value: 'ReturnRequested', label: 'İade Talebi' },
-        { value: 'ReturnApproved', label: 'İade Onaylandı' },
-        { value: 'ReturnRejected', label: 'İade Reddedildi' }
-      ]
-    };
-  },
-  computed: {
-    ...mapState(['token']),
-    canCancel() {
-      return this.order && ['PendingApproval', 'Approved'].includes(this.order.orderStatus);
-    },
-    canRequestReturn() {
-      return this.order && ['Shipped', 'Delivered'].includes(this.order.orderStatus);
-    }
-  },
-  methods: {
-    async fetchOrderDetail() {
-      this.loading = true;
-      this.error = null;
-      try {
-        if (!this.token) throw new Error("Oturum açmanız gerekiyor");
+// State (data)
+const order = ref(null);
+const loading = ref(false);
+const error = ref(null);
+const showCancelDialog = ref(false);
+const showReturnDialog = ref(false);
+const cancelReason = ref('');
+const returnReason = ref('');
 
-        const id = this.$route.params.id;
-        const response = await axios.get(`http://localhost:5294/api/Orders/${id}`, {
-          headers: { Authorization: `Bearer ${this.token}` }
-        });
+// Static Data
+const orderStatuses = [
+  { value: 'PendingApproval', label: 'Onay Bekliyor' },
+  { value: 'Approved', label: 'Onaylandı' },
+  { value: 'Rejected', label: 'Reddedildi' },
+  { value: 'Shipped', label: 'Kargoya Verildi' },
+  { value: 'Delivered', label: 'Teslim Edildi' },
+  { value: 'Cancelled', label: 'İptal Edildi' },
+  { value: 'ReturnRequested', label: 'İade Talebi' },
+  { value: 'ReturnApproved', label: 'İade Onaylandı' },
+  { value: 'ReturnRejected', label: 'İade Reddedildi' }
+];
 
-        this.order = response.data;
-      } catch (e) {
-        console.error(e);
-        this.error = e.response?.data?.message || 
-                   e.message || 
-                   "Sipariş detayları alınırken bir hata oluştu";
-      } finally {
-        this.loading = false;
-      }
-    },
-    formatDate(dateStr) {
-      if (!dateStr) return '';
-      const options = { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      };
-      return new Date(dateStr).toLocaleDateString('tr-TR', options);
-    },
-    formatPrice(amount) {
-      if (amount === undefined || amount === null) return '0,00 ₺';
-      return amount.toFixed(2) + ' ₺';
-    },
-    getStatusClass(status) {
-      if (!status) return '';
-      return `status-${status.toLowerCase()}`;
-    },
-    getStatusText(status) {
-      if (!status) return '';
-      const found = this.orderStatuses.find(s => s.value === status);
-      return found ? found.label : status;
-    },
-    async cancelOrder() {
-      if (!confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) return;
-      
-      try {
-        this.loading = true;
-        await axios.put(`http://localhost:5294/api/Orders/${this.order.id}/cancel`, null, {
-          headers: { Authorization: `Bearer ${this.token}` }
-        });
-        this.fetchOrderDetail(); // Yenile
-      } catch (e) {
-        alert('İptal işlemi başarısız oldu: ' + (e.response?.data?.message || e.message));
-      } finally {
-        this.loading = false;
-      }
-    },
-    async requestReturn() {
-      if (!confirm('Bu ürün için iade talebi oluşturmak istediğinize emin misiniz?')) return;
-      
-      try {
-        this.loading = true;
-        await axios.post(`http://localhost:5294/api/Orders/${this.order.id}/return-request`, null, {
-          headers: { Authorization: `Bearer ${this.token}` }
-        });
-        alert('İade talebiniz başarıyla oluşturuldu');
-        this.fetchOrderDetail(); // Yenile
-      } catch (e) {
-        alert('İade talebi oluşturulamadı: ' + (e.response?.data?.message || e.message));
-      } finally {
-        this.loading = false;
-      }
-    }
-  },
-  mounted() {
-    this.fetchOrderDetail();
+// Hooks
+const store = useStore();
+const route = useRoute();
+const router = useRouter();
+const toast = useToast();
+
+// Computed Properties
+const token = computed(() => store.state.token);
+
+const canCancel = computed(() => {
+  return order.value && ['PendingApproval', 'Approved'].includes(order.value.orderStatus);
+});
+
+const canRequestReturn = computed(() => {
+  return order.value && ['Shipped', 'Delivered'].includes(order.value.orderStatus);
+});
+
+// Methods (Functions)
+const fetchOrderDetail = async () => {
+  loading.value = true;
+  error.value = null;
+  try {
+    if (!token.value) throw new Error("Oturum açmanız gerekiyor");
+
+    const id = route.params.id;
+    const response = await axios.get(`https://localhost:7135/api/Orders/${id}`, {
+      headers: { Authorization: `Bearer ${token.value}` }
+    });
+    order.value = response.data;
+  } catch (e) {
+    console.error(e);
+    error.value = e.response?.data?.message || e.message || "Sipariş detayları alınırken bir hata oluştu";
+  } finally {
+    loading.value = false;
   }
 };
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const options = { 
+    day: '2-digit', 
+    month: 'short', 
+    year: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  };
+  return new Date(dateStr).toLocaleDateString('tr-TR', options);
+};
+
+const formatPrice = (amount) => {
+  if (amount === undefined || amount === null) return '0,00 ₺';
+  return amount.toFixed(2) + ' ₺';
+};
+
+const getStatusClass = (status) => {
+  if (!status) return '';
+  return `status-${status.toLowerCase()}`;
+};
+
+const getStatusText = (status) => {
+  if (!status) return '';
+  const found = orderStatuses.find(s => s.value === status);
+  return found ? found.label : status;
+};
+
+const showCancelModal = () => {
+  cancelReason.value = '';
+  showCancelDialog.value = true;
+};
+
+const showReturnModal = () => {
+  returnReason.value = '';
+  showReturnDialog.value = true;
+};
+
+const cancelOrder = async () => {
+  if (!cancelReason.value.trim()) {
+    toast.warning('Lütfen iptal nedeninizi belirtin');
+    return;
+  }
+
+  try {
+    loading.value = true;
+    await axios.post(
+      `https://localhost:7135/api/Orders/${order.value.id}/cancel`, 
+      { reason: cancelReason.value },
+      { headers: { Authorization: `Bearer ${token.value}` } }
+    );
+    
+    showCancelDialog.value = false;
+    toast.success('Sipariş başarıyla iptal edildi');
+    fetchOrderDetail();
+  } catch (e) {
+    console.error(e);
+    toast.error('İptal işlemi başarısız oldu: ' + (e.response?.data?.message || e.message));
+  } finally {
+    loading.value = false;
+  }
+};
+
+const requestReturn = async () => {
+  if (!returnReason.value.trim()) {
+    toast.warning('Lütfen iade nedeninizi belirtin');
+    return;
+  }
+
+  try {
+    loading.value = true;
+    await axios.post(
+      `https://localhost:7135/api/Orders/${order.value.id}/return-request`, 
+      { reason: returnReason.value },
+      { headers: { Authorization: `Bearer ${token.value}` } }
+    );
+    
+    showReturnDialog.value = false;
+    toast.success('İade talebiniz başarıyla oluşturuldu');
+    fetchOrderDetail();
+  } catch (e) {
+    console.error(e);
+    toast.error('İade talebi oluşturulamadı: ' + (e.response?.data?.message || e.message));
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Lifecycle Hooks
+onMounted(() => {
+  fetchOrderDetail();
+});
 </script>
 
 <style scoped>
@@ -372,6 +442,26 @@ export default {
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.85rem;
+}
+
+/* Kargo Bilgileri */
+.shipping-info {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #eee;
+  background-color: #f5f8fa;
+}
+
+.shipping-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.shipping-item i {
+  color: #7f8c8d;
+  width: 1.2rem;
+  text-align: center;
 }
 
 /* Durum Renkleri */
@@ -624,6 +714,76 @@ export default {
 
 .return-button:hover {
   background-color: #d35400;
+}
+
+/* Modal Stilleri */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.modal-content textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin: 1rem 0;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.modal-actions button {
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  border: none;
+}
+
+.modal-cancel {
+  background-color: #ecf0f1;
+  color: #7f8c8d;
+}
+
+.modal-cancel:hover {
+  background-color: #d5dbdb;
+}
+
+.modal-confirm {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.modal-confirm:hover {
+  background-color: #27ae60;
 }
 
 /* Responsive */

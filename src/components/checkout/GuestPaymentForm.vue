@@ -133,7 +133,7 @@ export default {
       billingAddress: null,
       notes: '',
       showBillingModal: false,
-      apiBaseUrl: 'http://localhost:5294',
+      apiBaseUrl: 'https://localhost:7135',
       cities: [], districts: [], selectedCityId: '', 
     };
   },
