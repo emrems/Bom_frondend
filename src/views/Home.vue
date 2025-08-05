@@ -4,6 +4,11 @@
       <HeroSection />
     </div>
 
+    <!-- YENİ: Canlı Kur Bilgileri bileşeni buraya eklendi -->
+    <div class="section-container">
+      <LiveGoldPrices />
+    </div>
+
     <!-- GÜNCELLENDİ: Bu slider artık 'bestsellers' verisini kullanacak -->
     <div class="section-container">
       <FeaturedProductsSlider :products="bestsellers" :loading="loading" :error="error" />
@@ -24,6 +29,8 @@
 <script>
 import axios from 'axios';
 import HeroSection from '@/components/home/HeroSection.vue';
+// YENİ: LiveGoldPrices bileşeni import edildi
+import LiveGoldPrices from '@/components/home/LiveGoldPrices.vue'; 
 import FeaturedProductsSlider from '@/components/home/FeaturedProductsSlider.vue';
 import CampaignsSection from '@/components/home/CampaignsSection.vue';
 import ProductListSection from '@/components/home/ProductListSection.vue';
@@ -32,6 +39,8 @@ export default {
   name: 'Home',
   components: {
     HeroSection,
+    // YENİ: LiveGoldPrices bileşeni components listesine eklendi
+    LiveGoldPrices, 
     FeaturedProductsSlider,
     CampaignsSection,
     ProductListSection
@@ -39,20 +48,18 @@ export default {
   data() {
     return {
       products: [],
-      // YENİ: Vitrin (FeaturedProductsSlider) için çok satanlar dizisi eklendi
       bestsellers: [],
       loading: true,
       error: null,
-      apiBaseUrl: 'https://localhost:7135', 
+      apiBaseUrl: 'http://localhost:5294', 
     };
   },
   mounted() {
-    this.fetchProducts(); // Tüm ürünleri çek
-    this.fetchBestsellers(); // Çok satanları çek
+    this.fetchProducts();
+    this.fetchBestsellers();
     this.initScrollAnimations();
   },
   methods: {
-    // Bu metot 'ProductListSection' için tüm ürünleri çekmeye devam ediyor
     async fetchProducts() {
       try {
         this.loading = true;
@@ -79,10 +86,8 @@ export default {
       }
     },
 
-    // YENİ: Bu metot 'FeaturedProductsSlider' için çok satanları çekiyor
     async fetchBestsellers() {
       try {
-        // Not: Bu isteğin 'loading' durumunu etkilememesi için ayrı yönetiyoruz
         const response = await axios.get(`${this.apiBaseUrl}/api/Products/bestsellers`);
         
         this.bestsellers = response.data.map(product => {
@@ -98,8 +103,6 @@ export default {
 
       } catch (error) {
         console.error('Çok satan ürünleri çekerken hata:', error);
-        // Vitrin bölümünün boş kalmaması için hata durumunda ana ürünlerden birkaçını gösterebiliriz
-        // veya hata mesajı gösterebiliriz. Şimdilik konsola yazdırıyoruz.
       }
     },
 
@@ -153,6 +156,7 @@ export default {
   transform: translateY(0);
 }
 
+/* GÜNCELLENDİ: Animasyon gecikmeleri yeni eklenen bölümle uyumlu olacak şekilde ayarlandı */
 .section-container:nth-of-type(2) {
   transition-delay: 0.1s;
 }
@@ -161,5 +165,8 @@ export default {
 }
 .section-container:nth-of-type(4) {
   transition-delay: 0.3s;
+}
+.section-container:nth-of-type(5) {
+  transition-delay: 0.4s;
 }
 </style>

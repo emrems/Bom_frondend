@@ -52,7 +52,7 @@ export default {
     return {
       loading: false,
       shippingCost: 50,
-      apiBaseUrl: 'https://localhost:7135',
+      apiBaseUrl: 'http://localhost:5294',
     };
   },
   computed: {

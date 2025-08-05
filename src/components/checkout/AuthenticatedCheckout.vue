@@ -102,7 +102,7 @@ export default {
         district: 'Kadıköy', fullAddress: '', postalCode: '34700'
       },
       notes: '',
-      apiBaseUrl: 'https://localhost:7135',
+      apiBaseUrl: 'http://localhost:5294',
     };
   },
  

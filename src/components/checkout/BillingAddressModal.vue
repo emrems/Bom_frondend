@@ -66,7 +66,7 @@ export default {
         addressTitle: 'Fatura Adresi', contactName: '', phoneNumber: '', city: '',
         district: '', fullAddress: '', postalCode: ''
       },
-      apiBaseUrl: 'https://localhost:7135',
+      apiBaseUrl: 'http://localhost:5294',
       cities: [],
       districts: [],
       selectedCityId: '',
