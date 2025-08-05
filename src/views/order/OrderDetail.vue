@@ -190,7 +190,7 @@ export default {
         if (!this.token) throw new Error("Oturum açmanız gerekiyor");
 
         const id = this.$route.params.id;
-        const response = await axios.get(`http://localhost:5294/api/Orders/${id}`, {
+        const response = await axios.get(`https://localhost:7135/api/Orders/${id}`, {
           headers: { Authorization: `Bearer ${this.token}` }
         });
 
@@ -233,7 +233,7 @@ export default {
       
       try {
         this.loading = true;
-        await axios.put(`http://localhost:5294/api/Orders/${this.order.id}/cancel`, null, {
+        await axios.put(`https://localhost:7135/api/Orders/${this.order.id}/cancel`, null, {
           headers: { Authorization: `Bearer ${this.token}` }
         });
         this.fetchOrderDetail(); // Yenile
@@ -248,7 +248,7 @@ export default {
       
       try {
         this.loading = true;
-        await axios.post(`http://localhost:5294/api/Orders/${this.order.id}/return-request`, null, {
+        await axios.post(`https://localhost:7135/api/Orders/${this.order.id}/return-request`, null, {
           headers: { Authorization: `Bearer ${this.token}` }
         });
         alert('İade talebiniz başarıyla oluşturuldu');

@@ -194,7 +194,7 @@ export default {
       this.successMessage = null;
 
       try {
-        const API_BASE_URL = 'http://localhost:5294/api'; 
+        const API_BASE_URL = 'https://localhost:7135/api'; 
 
         const response = await axios.post(`${API_BASE_URL}/Auth/Register`, {
           firstName: this.form.firstName,

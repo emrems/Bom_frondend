@@ -88,7 +88,7 @@ export default createStore({
       }
 
       try {
-        const response = await axios.post('http://localhost:5294/api/Cart/add', payload, { headers });
+        const response = await axios.post('https://localhost:7135/api/Cart/add', payload, { headers });
         const updatedCartFromApi = response.data; // API'den dönen sepet objesi
         console.log("aradığımız CA",response.data);
 
@@ -134,7 +134,7 @@ export default createStore({
       }
 
       try {
-        const response = await axios.delete('http://localhost:5294/api/Cart/remove', { data: payload, headers: headers }); 
+        const response = await axios.delete('https://localhost:7135/api/Cart/remove', { data: payload, headers: headers }); 
         
         const updatedCartFromApi = response.data;
         commit('SET_CART_ITEMS', updatedCartFromApi.items.map(item => ({
@@ -181,7 +181,7 @@ export default createStore({
       }
 
       try {
-        const response = await axios.put('http://localhost:5294/api/Cart/update', payload, { headers });
+        const response = await axios.put('https://localhost:7135/api/Cart/update', payload, { headers });
         
         const updatedCartFromApi = response.data;
         commit('SET_CART_ITEMS', updatedCartFromApi.items.map(item => ({
@@ -212,11 +212,11 @@ export default createStore({
         if (state.token) {
           // Kullanıcı giriş yapmış: /api/Cart endpoint'ine token ile GET isteği
           headers['Authorization'] = `Bearer ${state.token}`;
-          response = await axios.get('http://localhost:5294/api/Cart', { headers });
+          response = await axios.get('https://localhost:7135/api/Cart', { headers });
         } else if (state.cartId) {
           // Kullanıcı misafir ve daha önce bir cartId almış: /api/Cart/get endpoint'ine POST isteği
           const payload = { cartId: state.cartId };
-          response = await axios.post('http://localhost:5294/api/Cart/get', payload, { headers });
+          response = await axios.post('https://localhost:7135/api/Cart/get', payload, { headers });
         } else {
           // Kullanıcı misafir ve henüz bir cartId'si yok. Sepet boş olarak kabul edilebilir.
           // İlk ürün eklendiğinde API'den zaten yeni bir cartId gelecek.
