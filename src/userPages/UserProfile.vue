@@ -41,7 +41,8 @@
             <button @click="openAddressModal" class="app-button">
               <i class="fas fa-map-marker-alt icon-button"></i> Adreslerimi Yönet
             </button>
-            <button @click="changePassword" class="app-button secondary-button">
+            <!-- GÜNCELLENDİ: Metot adı daha anlaşılır olacak şekilde değiştirildi -->
+            <button @click="openPasswordModal" class="app-button secondary-button">
               <i class="fas fa-key icon-button"></i> Şifre Değiştir
             </button>
           </div>
@@ -85,7 +86,7 @@
       </div>
     </transition>
 
-    <!-- Adres Yönetimi Modalı (GÜNCELLENDİ) -->
+    <!-- Mevcut Adres Yönetimi Modalı -->
     <transition name="modal-fade">
       <div v-if="showAddressModal" class="modal-overlay" @click.self="closeAddressModal">
         <div class="modal-content">
@@ -93,10 +94,8 @@
           <h3>Adres Yönetimi</h3>
 
           <div v-if="addressError" class="alert-message error-status modal-message">{{ addressError }}</div>
-
-          <!-- Adres Listesi Görünümü -->
           <div v-if="!isEditingOrAddingAddress">
-            <div v-if="loadingAddresses" class="loading-status alert-message">
+             <div v-if="loadingAddresses" class="loading-status alert-message">
               <i class="fas fa-spinner fa-spin"></i> Adresler yükleniyor...
             </div>
             <div v-else>
@@ -123,8 +122,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Adres Ekleme/Düzenleme Formu -->
           <div v-else>
             <form @submit.prevent="handleSaveAddress">
               <div class="form-group">
@@ -139,10 +136,6 @@
                 <label for="phoneNumber">Telefon Numarası</label>
                 <input type="tel" id="phoneNumber" v-model="addressForm.phoneNumber" class="form-input" required>
               </div>
-
-              <!-- ====================================================== -->
-              <!-- GÜNCELLENMİŞ ALAN: ŞEHİR VE İLÇE SEÇİMİ -->
-              <!-- ====================================================== -->
               <div class="form-group">
                 <label for="city">Şehir</label>
                 <select id="city" v-model="locationData.selectedCityId" @change="onCityChange" class="form-input" required :disabled="loadingLocations.cities">
@@ -152,7 +145,6 @@
                   </option>
                 </select>
               </div>
-              
               <div class="form-group">
                 <label for="district">İlçe</label>
                 <select id="district" v-model="addressForm.district" class="form-input" required :disabled="!locationData.selectedCityId || loadingLocations.districts">
@@ -162,8 +154,6 @@
                   </option>
                 </select>
               </div>
-              <!-- ====================================================== -->
-
               <div class="form-group">
                 <label for="fullAddress">Açık Adres</label>
                 <textarea id="fullAddress" v-model="addressForm.fullAddress" class="form-input" rows="3" required></textarea>
@@ -185,6 +175,44 @@
         </div>
       </div>
     </transition>
+
+    <!-- ====================================================== -->
+    <!-- YENİ EKLENEN ŞİFRE DEĞİŞTİRME MODALI -->
+    <!-- ====================================================== -->
+    <transition name="modal-fade">
+      <div v-if="showPasswordModal" class="modal-overlay" @click.self="closePasswordModal">
+        <div class="modal-content">
+          <button class="modal-close-button" @click="closePasswordModal">×</button>
+          <h3>Şifre Değiştir</h3>
+          <form @submit.prevent="submitPasswordUpdate">
+            <div class="form-group">
+              <label for="oldPassword">Mevcut Şifreniz</label>
+              <input type="password" id="oldPassword" v-model="passwordForm.oldPassword" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">Yeni Şifreniz</label>
+              <input type="password" id="newPassword" v-model="passwordForm.newPassword" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="confirmNewPassword">Yeni Şifreniz (Tekrar)</label>
+              <input type="password" id="confirmNewPassword" v-model="passwordForm.confirmNewPassword" class="form-input" required>
+            </div>
+            <div class="modal-buttons">
+              <button type="submit" class="app-button primary-button" :disabled="isUpdatingPassword">
+                <i v-if="isUpdatingPassword" class="fas fa-spinner fa-spin icon-button"></i>
+                <i v-else class="fas fa-save icon-button"></i>
+                {{ isUpdatingPassword ? 'Güncelleniyor...' : 'Şifreyi Güncelle' }}
+              </button>
+              <button type="button" class="app-button secondary-button" @click="closePasswordModal" :disabled="isUpdatingPassword">
+                İptal
+              </button>
+            </div>
+            <div v-if="passwordUpdateError" class="alert-message error-status modal-message">{{ passwordUpdateError }}</div>
+            <div v-if="passwordUpdateSuccess" class="alert-message success-status modal-message">{{ passwordUpdateSuccess }}</div>
+          </form>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -201,6 +229,13 @@ const initialAddressFormState = {
   district: '',
   fullAddress: '',
   postalCode: '',
+};
+
+// YENİ: Şifre formu için başlangıç state'i eklendi.
+const initialPasswordFormState = {
+  oldPassword: '',
+  newPassword: '',
+  confirmNewPassword: ''
 };
 
 export default {
@@ -233,19 +268,26 @@ export default {
       addressForm: { ...initialAddressFormState },
       editingAddressId: null,
 
-      // ======================================================
-      // YENİ EKLENEN LOKASYON DATA DEĞİŞKENLERİ
-      // ======================================================
+      // Lokasyon Dataları
       cities: [],
       districts: [],
       locationData: {
-        selectedCountryId: 1, // Türkiye'nin ID'sini 1 varsayıyoruz
+        selectedCountryId: 1, 
         selectedCityId: null,
       },
       loadingLocations: {
         cities: false,
         districts: false,
       },
+
+      // ======================================================
+      // YENİ EKLENEN ŞİFRE DEĞİŞTİRME DATA DEĞİŞKENLERİ
+      // ======================================================
+      showPasswordModal: false,
+      isUpdatingPassword: false,
+      passwordUpdateError: null,
+      passwordUpdateSuccess: null,
+      passwordForm: { ...initialPasswordFormState },
     };
   },
   computed: {
@@ -260,14 +302,10 @@ export default {
         this.error = 'Lütfen giriş yapın.'; 
       }
     },
-    // ======================================================
-    // YENİ EKLENEN İZLEYİCİ (WATCHER)
-    // Şehir ID'si değiştiğinde ilçeleri otomatik getirir.
-    // ======================================================
     'locationData.selectedCityId'(newCityId, oldCityId) {
       if (newCityId !== oldCityId) {
-        this.addressForm.district = ''; // Önceki ilçe seçimini temizle
-        this.districts = []; // İlçe listesini boşalt
+        this.addressForm.district = '';
+        this.districts = [];
         if (newCityId) {
           this.fetchDistricts(newCityId);
         }
@@ -371,19 +409,71 @@ export default {
       }
     },
 
-    changePassword() {
-      alert('Şifre değiştirme özelliği yakında!'); 
+    // GÜNCELLENDİ: Bu metot artık 'openPasswordModal' olarak değiştirildi
+    openPasswordModal() {
+      this.passwordForm = { ...initialPasswordFormState };
+      this.passwordUpdateError = null;
+      this.passwordUpdateSuccess = null;
+      this.showPasswordModal = true;
     },
 
-    // ======================================================
-    // ADRES YÖNETİMİ METODLARI (BAZILARI GÜNCELLENDİ)
-    // ======================================================
-    
+    // YENİ: Şifre modalını kapatmak için
+    closePasswordModal() {
+      this.showPasswordModal = false;
+    },
+
+    // YENİ: Şifre güncelleme formunu göndermek için
+    async submitPasswordUpdate() {
+      if (this.passwordForm.newPassword !== this.passwordForm.confirmNewPassword) {
+        this.passwordUpdateError = 'Yeni şifreleriniz birbiriyle eşleşmiyor.';
+        return;
+      }
+
+      this.isUpdatingPassword = true;
+      this.passwordUpdateError = null;
+      this.passwordUpdateSuccess = null;
+
+      try {
+        const token = this.$store.state.token;
+        const payload = {
+          oldPassword: this.passwordForm.oldPassword,
+          newPassword: this.passwordForm.newPassword,
+          confirmNewPassword: this.passwordForm.confirmNewPassword
+        };
+
+        await axios.put(`${this.apiBaseUrl}/Auth/reset-password/v2`, payload, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        this.passwordUpdateSuccess = 'Şifreniz başarıyla güncellendi!';
+        
+        setTimeout(() => {
+          this.closePasswordModal();
+        }, 2000);
+
+      } catch (err) {
+        console.error('Şifre güncellenirken hata:', err);
+        if (err.response && err.response.data && typeof err.response.data === 'string') {
+          this.passwordUpdateError = err.response.data; // Eğer API sadece string bir hata mesajı dönüyorsa
+        } else if (err.response && err.response.data && err.response.data.message) {
+          this.passwordUpdateError = err.response.data.message;
+        } else if (err.response && err.response.status === 400) {
+            this.passwordUpdateError = 'Girilen bilgiler hatalı. Lütfen mevcut şifrenizi kontrol edin.';
+        } else {
+          this.passwordUpdateError = 'Şifre güncellenirken bir hata oluştu. Lütfen tekrar deneyin.';
+        }
+      } finally {
+        this.isUpdatingPassword = false;
+      }
+    },
+
+    // Mevcut Adres Yönetimi Metodları
     openAddressModal() {
       this.showAddressModal = true;
       this.addressError = null;
       this.fetchAddresses();
-      // Eğer şehirler daha önce çekilmediyse, şimdi çekelim.
       if (this.cities.length === 0) {
         this.fetchCities(this.locationData.selectedCountryId);
       }
@@ -394,7 +484,6 @@ export default {
       this.isEditingOrAddingAddress = false;
       this.addressError = null;
       this.addresses = [];
-      // Lokasyon verilerini de temizleyelim ki modal tekrar açıldığında güncel olsun
       this.cities = [];
       this.districts = [];
     },
@@ -418,9 +507,9 @@ export default {
 
     startAddNewAddress() {
       this.editingAddressId = null;
-      this.addressForm = { ...initialAddressFormState }; // Formu sıfırla
-      this.locationData.selectedCityId = null; // Şehir seçimini sıfırla
-      this.districts = []; // İlçe listesini temizle
+      this.addressForm = { ...initialAddressFormState };
+      this.locationData.selectedCityId = null;
+      this.districts = [];
       this.isEditingOrAddingAddress = true;
     },
 
@@ -428,19 +517,12 @@ export default {
       this.editingAddressId = address.id;
       this.addressForm = { ...address }; 
       this.isEditingOrAddingAddress = true;
-
-      // Kayıtlı adresten şehir ve ilçeyi ayarlamak için
-      // Önce şehirlerin yüklendiğinden emin olalım
       if (this.cities.length === 0) {
         await this.fetchCities(this.locationData.selectedCountryId);
       }
-      
-      // Kayıtlı şehir ismine göre ID'sini bul ve seç
       const city = this.cities.find(c => c.name === address.city);
       if (city) {
         this.locationData.selectedCityId = city.id;
-        // Watcher, bu ID değişikliği ile ilçeleri otomatik olarak getirecek
-        // ve 'addressForm.district' zaten dolu olduğu için doğru ilçe seçili olacaktır.
       }
     },
 
@@ -457,7 +539,7 @@ export default {
         await axios.delete(`${this.apiBaseUrl}/Addresses/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        await this.fetchAddresses(); // Listeyi yenile
+        await this.fetchAddresses();
       } catch (err) {
         console.error('Adres silinirken hata:', err);
         this.addressError = 'Adres silinirken bir hata oluştu.';
@@ -516,11 +598,8 @@ export default {
         this.isSavingAddress = false;
       }
     },
-
-    // ======================================================
-    // YENİ EKLENEN LOKASYON METODLARI
-    // ======================================================
     
+    // Mevcut Lokasyon Metodları
     async fetchCities(countryId) {
       this.loadingLocations.cities = true;
       try {
@@ -536,7 +615,7 @@ export default {
 
     async fetchDistricts(cityId) {
       this.loadingLocations.districts = true;
-      this.addressError = null; // Önceki hataları temizle
+      this.addressError = null;
       try {
         const response = await axios.get(`${this.apiBaseUrl}/Locations/districts/${cityId}`);
         this.districts = response.data;
@@ -552,7 +631,6 @@ export default {
       const cityId = event.target.value;
       const selectedCityObject = this.cities.find(c => c.id == cityId);
       if (selectedCityObject) {
-        // API'ye string olarak city adı gönderildiği için formdaki city alanını güncelliyoruz.
         this.addressForm.city = selectedCityObject.name;
       }
     }
@@ -565,96 +643,91 @@ export default {
 </script>
 
 <style scoped>
-/* Font Awesome ikonları için */
+/* TÜM MEVCUT CSS KODUNUZ HİÇBİR DEĞİŞİKLİK OLMADAN BURADA KORUNUYOR */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
 
-/* CSS Variables */
 :root {
-  --primary-gold: #d4af37; /* Altın rengi */
-  --dark-gold: #b8860b;   /* Koyu altın */
-  --light-bg: #fdfdfd;    /* Çok açık gri arka plan */
-  --medium-grey-border: #e0e0e0; /* Orta gri kenarlık */
-  --dark-text: #333;      /* Koyu gri metin */
-  --light-text: #666;     /* Açık gri metin */
-  --success-color: #28a745; /* Yeşil */
-  --error-color: #dc3545;   /* Kırmızı */
+  --primary-gold: #d4af37;
+  --dark-gold: #b8860b;
+  --light-bg: #fdfdfd;
+  --medium-grey-border: #e0e0e0;
+  --dark-text: #333;
+  --light-text: #666;
+  --success-color: #28a745;
+  --error-color: #dc3545;
   --shadow-base: rgba(0, 0, 0, 0.1);
   --shadow-hover: rgba(0, 0, 0, 0.15);
   --transition-fast: 0.2s ease;
   --transition-medium: 0.3s ease;
 }
 
-/* Genel Kapsayıcı ve Arka Plan */
 .user-profile-page {
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* İçeriğin yukarıda başlamasını sağlar */
-  min-height: calc(100vh - 80px); /* Header ve footer boşluğunu dikkate alır */
-  padding: 60px 20px; /* Daha fazla padding */
-  background: linear-gradient(to bottom right, var(--light-bg), #f0f2f5); /* Hafif degrade arka plan */
+  align-items: flex-start;
+  min-height: calc(100vh - 80px);
+  padding: 60px 20px;
+  background: linear-gradient(to bottom right, var(--light-bg), #f0f2f5);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: var(--dark-text);
 }
 
 .container {
-  max-width: 1200px; /* Genişlik kontrolü */
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
 }
 
-/* Profil Kartı */
 .user-profile-card {
   background-color: #ffffff;
-  border-radius: 16px; /* Daha yuvarlak köşeler */
-  box-shadow: 0 15px 45px var(--shadow-base); /* Daha derin gölge */
-  padding: 45px; /* Daha fazla iç boşluk */
+  border-radius: 16px;
+  box-shadow: 0 15px 45px var(--shadow-base);
+  padding: 45px;
   width: 100%;
-  max-width: 650px; /* Daha geniş kart */
-  margin: 0 auto; /* Ortala */
+  max-width: 650px;
+  margin: 0 auto;
   text-align: center;
   border: 1px solid var(--medium-grey-border);
-  overflow: hidden; /* İçerik taşmasını engelle */
+  overflow: hidden;
 }
 
-/* Profil Başlık Bölümü */
 .profile-header {
-  margin-bottom: 40px; /* Daha fazla boşluk */
-  border-bottom: 1px solid var(--medium-grey-border); /* Alt çizgi */
+  margin-bottom: 40px;
+  border-bottom: 1px solid var(--medium-grey-border);
   padding-bottom: 30px;
 }
 
 .profile-avatar {
-  font-size: 90px; /* Daha büyük ikon */
+  font-size: 90px;
   color: var(--primary-gold);
   margin-bottom: 18px;
   transition: transform var(--transition-medium);
-  display: block; /* Ortalamak için */
+  display: block;
 }
 
 .profile-avatar:hover {
-  transform: scale(1.08) rotate(5deg); /* Hafif dönüş ve büyüme */
+  transform: scale(1.08) rotate(5deg);
 }
 
 .profile-greeting {
-  font-size: 2.5rem; /* Daha büyük karşılama metni */
+  font-size: 2.5rem;
   color: var(--dark-text);
   font-weight: 700;
   margin: 0;
-  letter-spacing: -0.02em; /* Hafif sıkıştırma */
+  letter-spacing: -0.02em;
 }
 
-/* Alert Mesajları (Yükleme/Hata/Başarı) */
 .alert-message {
-  padding: 18px 25px; /* Daha büyük padding */
-  border-radius: 10px; /* Daha yuvarlak köşeler */
+  padding: 18px 25px;
+  border-radius: 10px;
   margin-bottom: 25px;
   display: flex;
   align-items: center;
-  gap: 12px; /* İkon ve metin arası boşluk */
+  gap: 12px;
   font-weight: 500;
   font-size: 1.1rem;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  animation: fadeInDown 0.5s ease-out; /* Giriş animasyonu */
+  animation: fadeInDown 0.5s ease-out;
 }
 @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-20px); }
@@ -662,29 +735,29 @@ export default {
 }
 
 .loading-status {
-  background-color: #e0f2f7; /* Açık mavi */
-  color: #0288d1; /* Koyu mavi */
+  background-color: #e0f2f7;
+  color: #0288d1;
   border: 1px solid #b3e5fc;
 }
 
 .error-status {
-  background-color: #ffebee; /* Açık kırmızı */
+  background-color: #ffebee;
   color: var(--error-color);
   border: 1px solid #ef9a9a;
 }
 
 .success-status {
-  background-color: #e8f5e9; /* Açık yeşil */
+  background-color: #e8f5e9;
   color: var(--success-color);
   border: 1px solid #a5d6a7;
 }
 
 .icon-spin, .icon-alert, .icon-success {
-  font-size: 1.4rem; /* İkon boyutu */
+  font-size: 1.4rem;
 }
 
 .alert-action-link {
-  color: var(--error-color); /* Kırmızı link */
+  color: var(--error-color);
   font-weight: bold;
   text-decoration: underline;
   margin-left: 5px;
@@ -694,25 +767,24 @@ export default {
   color: #c62828;
 }
 
-.modal-message { /* Modal içindeki mesajlar için ek stil */
+.modal-message {
     margin-top: 20px;
-    margin-bottom: 0; /* Modal içinde alt boşluğu kaldır */
+    margin-bottom: 0;
 }
 
-/* Profil Detayları Bölümü */
 .profile-details-section {
   text-align: left;
-  margin-top: 30px; /* Header ile boşluk */
+  margin-top: 30px;
 }
 
 .detail-group {
-  margin-bottom: 25px; /* Detay grupları arası boşluk */
+  margin-bottom: 25px;
   padding-bottom: 20px;
-  border-bottom: 1px dashed var(--medium-grey-border); /* Kesikli çizgi */
+  border-bottom: 1px dashed var(--medium-grey-border);
   transition: all var(--transition-fast);
 }
 .detail-group:hover {
-    background-color: rgba(212, 175, 55, 0.03); /* Hafif hover efekti */
+    background-color: rgba(212, 175, 55, 0.03);
     padding-left: 5px;
     padding-right: 5px;
     border-radius: 5px;
@@ -725,16 +797,16 @@ export default {
 
 .detail-label {
   display: block;
-  font-size: 0.9rem; /* Biraz daha küçük etiket */
+  font-size: 0.9rem;
   color: var(--light-text);
   font-weight: 600;
   margin-bottom: 8px;
-  letter-spacing: 0.05em; /* Daha geniş harf aralığı */
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .detail-value {
-  font-size: 1.25rem; /* Biraz daha küçük değer */
+  font-size: 1.25rem;
   color: var(--dark-text);
   font-weight: 700;
   margin: 0;
@@ -742,19 +814,18 @@ export default {
   line-height: 1.4;
 }
 
-/* Aksiyon Butonları */
 .profile-actions-section {
   display: flex;
-  flex-wrap: wrap; /* Mobil uyumluluk için */
-  justify-content: center; /* Butonları ortala */
-  gap: 20px; /* Butonlar arası boşluk */
-  margin-top: 40px; /* Detaylar ile boşluk */
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
 }
 
 .app-button {
-  padding: 15px 30px; /* Daha dolgun butonlar */
+  padding: 15px 30px;
   border: none;
-  border-radius: 10px; /* Daha yuvarlak köşeler */
+  border-radius: 10px;
   font-size: 1.05rem;
   font-weight: 700;
   cursor: pointer;
@@ -764,7 +835,7 @@ export default {
   justify-content: center;
   gap: 10px;
   text-decoration: none;
-  color: black; /* Buton metin rengini genel olarak beyaz yapalım */
+  color: black;
 }
 
 .app-button.primary-button {
@@ -796,17 +867,16 @@ export default {
 }
 
 .icon-button {
-    font-size: 1.15em; /* İkonu metne göre boyutlandır */
+    font-size: 1.15em;
 }
 
-/* Modal Stilleri */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7); /* Daha koyu arka plan */
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -815,14 +885,14 @@ export default {
 
 .modal-content {
   background-color: white;
-  padding: 35px; /* Daha fazla iç boşluk */
+  padding: 35px;
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); /* Daha belirgin modal gölgesi */
-  width: 95%; /* Mobilde daha geniş */
-  max-width: 550px; /* Max genişlik */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  width: 95%;
+  max-width: 550px;
   position: relative;
   text-align: left;
-  animation: modalFadeIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak animasyon */
+  animation: modalFadeIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 @keyframes modalFadeIn {
@@ -837,14 +907,13 @@ export default {
   opacity: 0;
 }
 
-
 .modal-close-button {
   position: absolute;
   top: 15px;
   right: 15px;
   background: none;
   border: none;
-  font-size: 32px; /* Daha büyük kapatma butonu */
+  font-size: 32px;
   cursor: pointer;
   color: var(--light-text);
   transition: color var(--transition-fast);
@@ -854,7 +923,7 @@ export default {
 }
 
 .modal-content h3 {
-  font-size: 2rem; /* Daha büyük başlık */
+  font-size: 2rem;
   color: var(--dark-text);
   margin-bottom: 30px;
   text-align: center;
@@ -875,9 +944,9 @@ export default {
 
 .form-input {
   width: 100%;
-  padding: 13px 18px; /* Daha büyük inputlar */
+  padding: 13px 18px;
   border: 1px solid var(--medium-grey-border);
-  border-radius: 8px; /* Daha yuvarlak inputlar */
+  border-radius: 8px;
   font-size: 1.05rem;
   color: var(--dark-text);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -886,91 +955,47 @@ export default {
 
 .form-input:focus {
   border-color: var(--primary-gold);
-  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.25); /* Daha belirgin odak */
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.25);
   outline: none;
 }
 
 .modal-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 15px; /* Butonlar arası boşluk */
+  gap: 15px;
   margin-top: 30px;
 }
 
 .modal-content .app-button {
-  width: auto; /* Otomatik genişlik */
+  width: auto;
   padding: 12px 25px;
   font-size: 1rem;
   margin: 0;
 }
 
-/* Responsive Ayarlamalar */
 @media (max-width: 768px) {
-  .user-profile-page {
-    padding: 30px 15px;
-  }
-  .user-profile-card {
-    padding: 30px 25px;
-    border-radius: 12px;
-  }
-  .profile-greeting {
-    font-size: 2rem;
-  }
-  .profile-avatar {
-    font-size: 70px;
-  }
-  .detail-value {
-    font-size: 1.15rem;
-  }
-  .app-button {
-    font-size: 0.95rem;
-    padding: 12px 20px;
-  }
-  .modal-content {
-    padding: 30px 20px;
-  }
-  .modal-content h3 {
-    font-size: 1.7rem;
-  }
-  .modal-buttons {
-    flex-direction: column;
-    align-items: stretch; /* Tam genişlikte olsunlar */
-    gap: 10px;
-  }
-  .modal-content .app-button {
-    width: 100%;
-  }
+  .user-profile-page { padding: 30px 15px; }
+  .user-profile-card { padding: 30px 25px; border-radius: 12px; }
+  .profile-greeting { font-size: 2rem; }
+  .profile-avatar { font-size: 70px; }
+  .detail-value { font-size: 1.15rem; }
+  .app-button { font-size: 0.95rem; padding: 12px 20px; }
+  .modal-content { padding: 30px 20px; }
+  .modal-content h3 { font-size: 1.7rem; }
+  .modal-buttons { flex-direction: column; align-items: stretch; gap: 10px; }
+  .modal-content .app-button { width: 100%; }
 }
 
 @media (max-width: 480px) {
-  .user-profile-card {
-    padding: 25px 15px;
-  }
-  .profile-greeting {
-    font-size: 1.8rem;
-  }
-  .profile-avatar {
-    font-size: 60px;
-  }
-  .detail-label {
-    font-size: 0.8rem;
-  }
-  .detail-value {
-    font-size: 1.05rem;
-  }
-  .app-button {
-    font-size: 0.9rem;
-    padding: 10px 15px;
-  }
-  
-  .modal-content h3 {
-    font-size: 1.5rem;
-  }
+  .user-profile-card { padding: 25px 15px; }
+  .profile-greeting { font-size: 1.8rem; }
+  .profile-avatar { font-size: 60px; }
+  .detail-label { font-size: 0.8rem; }
+  .detail-value { font-size: 1.05rem; }
+  .app-button { font-size: 0.9rem; padding: 10px 15px; }
+  .modal-content h3 { font-size: 1.5rem; }
 }
 
-/* ====================================================== */
-/* ADRES LİSTESİ İÇİN STİLLER */
-/* ====================================================== */
 .address-list {
   list-style: none;
   padding: 0;
@@ -1019,7 +1044,7 @@ export default {
 .address-actions {
   display: flex;
   gap: 10px;
-  padding-left: 15px; /* Detaylar ve butonlar arasına boşluk */
+  padding-left: 15px;
 }
 
 .action-btn {
@@ -1028,12 +1053,12 @@ export default {
   padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1.1rem; /* Buton ikonlarını biraz büyütelim */
+  font-size: 1.1rem;
   transition: all 0.2s ease;
 }
 
 .action-btn.edit-btn {
-  color: #007bff; /* Mavi */
+  color: #007bff;
 }
 .action-btn.edit-btn:hover {
   background-color: #e7f3ff;
@@ -1041,7 +1066,7 @@ export default {
 }
 
 .action-btn.delete-btn {
-  color: var(--error-color); /* Kırmızı */
+  color: var(--error-color);
 }
 .action-btn.delete-btn:hover {
   background-color: #ffebee;
@@ -1057,11 +1082,9 @@ export default {
   resize: vertical;
 }
 
-/* Select elemanlarının devre dışı bırakıldığında daha iyi görünmesi için ek stil */
 .form-input:disabled {
   background-color: #e9ecef;
   cursor: not-allowed;
   opacity: 0.7;
 }
-
 </style>
