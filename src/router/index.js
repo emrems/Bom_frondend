@@ -33,7 +33,7 @@ const routes = [
     component: Contact,
   },
   {
-    path: "/product/:id",
+    path: "/product/:slug",
     name: "ProductDetail",
     component: ProductDetail,
     props: true,

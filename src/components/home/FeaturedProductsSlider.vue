@@ -30,7 +30,7 @@
         class="product-swiper"
       >
         <swiper-slide v-for="product in duplicatedProducts" :key="product.uniqueKey">
-          <router-link :to="`/product/${product.id}`" class="product-card-link">
+          <router-link :to="`/product/${product.slug}`" class="product-card-link">
             <div class="product-card">
               <div class="product-image-container">
                 <img :src="product.imageUrl" :alt="product.name" class="product-image" />

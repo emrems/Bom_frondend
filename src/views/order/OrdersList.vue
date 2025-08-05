@@ -111,7 +111,7 @@
         </div>
         <h3>Henüz siparişiniz bulunmamaktadır</h3>
         <p>Alışverişe başlamak için mağazamızı ziyaret edebilirsiniz.</p>
-        <router-link to="/products" class="shop-button"
+        <router-link to="/" class="shop-button"
           >Alışverişe Başla</router-link
         >
       </div>
@@ -203,7 +203,7 @@ export default {
       }
       this.currentPage = 1;
     },
-
+      
     getStatusClass(status) {
       return `status-${status.toLowerCase().replace(/\s/g, '')}`;
     },
@@ -246,14 +246,14 @@ export default {
       }
     },
     
-    // Basit mesaj fonksiyonları
-    showSuccessMessage(message) {
-      alert(`✅ ${message}`);
-    },
+    // // Basit mesaj fonksiyonları
+    // showSuccessMessage(message) {
+    //   alert(`✅ ${message}`);
+    // },
     
-    showErrorMessage(message) {
-      alert(`❌ ${message}`);
-    }
+    // showErrorMessage(message) {
+    //   alert(`❌ ${message}`);
+    // }
   },
   mounted() {
     this.fetchOrders();

@@ -60,7 +60,7 @@
             <button @click="addToCart" class="btn add-to-cart-btn" :disabled="product.stockQuantity === 0">
               <i class="fas fa-shopping-cart"></i> Sepete Ekle
             </button>
-            <button class="btn wishlist-btn"><i class="far fa-heart"></i></button>
+            <!-- <button class="btn wishlist-btn"><i class="far fa-heart"></i></button> -->
           </div>
           
           <div class="trust-badges">
@@ -86,9 +86,9 @@
                   <li v-if="product.stockQuantity !== undefined"><strong>Stok:</strong> <span>{{ product.stockQuantity }} adet</span></li>
                 </ul>
               </div>
-              <div v-if="activeTab === 'reviews'" class="tab-pane">
+              <!-- <div v-if="activeTab === 'reviews'" class="tab-pane">
                 <p>Bu ürün için henüz yorum yapılmamıştır.</p>
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
@@ -116,7 +116,7 @@ import { mapActions, mapGetters } from 'vuex';
 
 export default {
   name: 'ProductDetail',
-  props: ['id'],
+  props: ['slug'],
   data() {
     return {
       product: null,
@@ -140,7 +140,7 @@ export default {
     await this.fetchCartDetails();
   },
   watch: {
-    async id() {
+    async slug() {
       await this.fetchProduct();
     }
   },
@@ -156,7 +156,7 @@ export default {
     async fetchProduct() {
       try {
         this.loading = true; this.error = null; this.product = null; this.quantity = 1;
-        const response = await axios.get(`${this.apiBaseUrl}/api/Products/${this.id}`);
+        const response = await axios.get(`${this.apiBaseUrl}/api/Products/slug/${this.slug}`);
         let productData = response.data;
         if (productData && productData.imageUrls && productData.imageUrls.length > 0) {
           productData.imageUrls = productData.imageUrls.map(relativeUrl => `${this.apiBaseUrl}${relativeUrl}`);
