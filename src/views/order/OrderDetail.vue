@@ -230,7 +230,7 @@ const fetchOrderDetail = async () => {
     if (!token.value) throw new Error("Oturum açmanız gerekiyor");
 
     const id = route.params.id;
-    const response = await axios.get(`http://localhost:5294/api/Orders/${id}`, {
+    const response = await axios.get(`https://localhost:7135/api/Orders/${id}`, {
       headers: { Authorization: `Bearer ${token.value}` }
     });
     order.value = response.data;
@@ -289,7 +289,7 @@ const cancelOrder = async () => {
   try {
     loading.value = true;
     await axios.post(
-      `http://localhost:5294/api/Orders/${order.value.id}/cancel`, 
+      `https://localhost:7135/api/Orders/${order.value.id}/cancel`, 
       { reason: cancelReason.value },
       { headers: { Authorization: `Bearer ${token.value}` } }
     );
@@ -314,7 +314,7 @@ const requestReturn = async () => {
   try {
     loading.value = true;
     await axios.post(
-      `http://localhost:5294/api/Orders/${order.value.id}/return-request`, 
+      `https://localhost:7135/api/Orders/${order.value.id}/return-request`, 
       { reason: returnReason.value },
       { headers: { Authorization: `Bearer ${token.value}` } }
     );

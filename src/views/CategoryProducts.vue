@@ -82,7 +82,7 @@ export default {
       error: null,
       products: [],
       categoryName: "",
-      apiBaseUrl: 'http://localhost:5294',
+      apiBaseUrl: 'https://localhost:7135',
     };
   },
   setup() {

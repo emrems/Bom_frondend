@@ -10,22 +10,18 @@
         </p>
       </div>
 
-      <!-- Yüklenme Durumu -->
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
       </div>
 
-      <!-- Hata Durumu -->
       <div v-else-if="error" class="error-state">
         <p>{{ error }}</p>
       </div>
-      
-      <!-- Başarılı Durum -->
+
       <div v-else>
-        <!-- Otomatik Kayan Şerit (v-show ile kontrol ediliyor) -->
+        <!-- Kayan şerit -->
         <div v-show="!showTable" class="ticker-wrap">
           <div class="ticker">
-            <!-- Orijinal verileri listeliyoruz -->
             <div v-for="price in prices" :key="price.id" class="price-item">
               <h3 class="currency-name">{{ price.kurAdi }}</h3>
               <div class="price-values">
@@ -39,7 +35,6 @@
                 </div>
               </div>
             </div>
-            <!-- Animasyonun kesintisiz olması için verileri BİR KEZ DAHA listeliyoruz -->
             <div v-for="price in prices" :key="price.id + '-clone'" class="price-item">
               <h3 class="currency-name">{{ price.kurAdi }}</h3>
               <div class="price-values">
@@ -56,7 +51,7 @@
           </div>
         </div>
 
-        <!-- YENİ: Gizli Kompakt Tablo (v-show ile kontrol ediliyor) -->
+        <!-- Tablo görünümü -->
         <div v-show="showTable" class="prices-table-container">
           <table class="prices-table">
             <thead>
@@ -65,6 +60,7 @@
                 <th class="text-center">Alış</th>
                 <th class="text-center">Satış</th>
                 <th class="text-center">Saat</th>
+                <th class="text-center">İşlem</th>
               </tr>
             </thead>
             <tbody>
@@ -73,12 +69,16 @@
                 <td class="text-center price-buy-text">{{ formatPrice(price.alis) }}</td>
                 <td class="text-center price-sell-text">{{ formatPrice(price.satis) }}</td>
                 <td class="text-center update-time">{{ formatRowTime(price.guncellenmeZamani) }}</td>
+                <td class="text-center">
+                  <button @click="handleAddToCart(price)" class="add-to-cart-btn">
+                    Sepete Ekle
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- YENİ: Göster/Gizle Butonu -->
         <div class="toggle-button-container">
           <button @click="showTable = !showTable" class="toggle-btn">
             <i :class="showTable ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
@@ -92,6 +92,7 @@
 
 <script>
 import axios from 'axios';
+import { mapActions } from 'vuex';
 
 export default {
   name: 'LiveGoldPrices',
@@ -101,16 +102,17 @@ export default {
       loading: true,
       error: null,
       lastUpdated: null,
-      apiBaseUrl: 'http://localhost:5294',
-      // YENİ: Tablonun görünürlüğünü kontrol eden değişken eklendi.
+      apiBaseUrl: 'https://localhost:7135',
       showTable: false,
     };
   },
   mounted() {
     this.fetchGoldPrices();
-    setInterval(this.fetchGoldPrices, 60000); 
+    setInterval(this.fetchGoldPrices, 60000);
   },
   methods: {
+    ...mapActions(['addItemToCart']),
+    
     async fetchGoldPrices() {
       this.error = null;
       try {
@@ -126,7 +128,7 @@ export default {
         this.loading = false;
       }
     },
-    // GÜNCELLENDİ: Ondalık basamak sayısı 4'e çıkarıldı.
+
     formatPrice(value) {
       const numericValue = parseFloat(value);
       if (isNaN(numericValue)) return value;
@@ -139,18 +141,33 @@ export default {
       if (!dateTimeString) return '';
       const date = new Date(dateTimeString);
       return date.toLocaleTimeString('tr-TR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
       });
     },
     formatRowTime(dateTimeString) {
       if (!dateTimeString) return '';
       const date = new Date(dateTimeString);
       return date.toLocaleTimeString('tr-TR', {
-          hour: '2-digit',
-          minute: '2-digit'
+        hour: '2-digit',
+        minute: '2-digit'
       });
+    },
+    async handleAddToCart(price) {
+      try {
+        await this.addItemToCart({
+          product: {
+            id: price.id,
+            name: price.kurAdi
+          },
+          quantity: 1,
+          mainImage: null // Eğer görsel varsa burada verilebilir
+        });
+        alert(`${price.kurAdi} sepete eklendi.`);
+      } catch (error) {
+        alert(`Sepete eklenirken bir hata oluştu: ${error.message}`);
+      }
     }
   }
 };
@@ -166,6 +183,19 @@ export default {
   padding: 2.5rem 0;
   font-family: 'Poppins', sans-serif;
   border-bottom: 1px solid #f0f0f0;
+}
+.add-to-cart-btn {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  border: none;
+  background-color: #c5a47e;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.add-to-cart-btn:hover {
+  background-color: #b08a63;
 }
 
 .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
