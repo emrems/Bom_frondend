@@ -185,13 +185,16 @@ export default {
       if (days) {
         const date = new Date();
         date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        // Düzeltilmiş kısım: `expires="="` yerine `expires =`
         expires = "; expires=" + date.toUTCString();
       }
-      document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax; Secure;";
+  // Siteniz HTTPS olduğu için 'Secure' parametresi kalmalı.
+  // Domain belirtmiyoruz, böylece tarayıcı bunu mevcut domain için doğru şekilde ayarlar.
+  // Bu, 'www' olan ve olmayan versiyonlar arasındaki sorunları engeller.
+      document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax; Secure";
     },
 
     getCookie(name) {
+  // Bu metodunuz zaten doğru çalışıyor, değiştirmeye gerek yok.
       const nameEQ = name + "=";
       const ca = document.cookie.split(';');
       for(let i = 0; i < ca.length; i++) {
@@ -203,9 +206,9 @@ export default {
     },
     
     deleteCookie(name) {
-      const domain = window.location.hostname;
-      document.cookie = name + '=; Path=/; Domain=' + domain + '; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  // Bir çerezi silmenin en güvenilir yolu, onu geçmiş bir tarihte sona erecek şekilde
+  // yeniden oluşturmaktır. Bu, 'path', 'domain' ve 'secure' ayarlarının tutarlı olmasını sağlar.
+      this.setCookie(name, '', -1);
     }
   }
 }

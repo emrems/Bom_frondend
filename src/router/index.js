@@ -16,6 +16,7 @@ import UserProfile from "../userPages/UserProfile.vue"; // Doğru yol: userPages
 import ResetPassword from "../views/ResetPassword.vue";
 import OrdersList from "../views/order/OrdersList.vue";
 import OrderDetail from "../views/order/OrderDetail.vue";
+import OrderLookup from "../views/order/OrderLookup.vue";
 const routes = [
   {
     path: "/",
@@ -97,6 +98,11 @@ const routes = [
     component: OrderDetail,
     meta: { requiresAuth: true }
   },
+  {
+    path: "/siparis-sorgula",
+    name: "OrderLookup",
+    component: OrderLookup
+  }
 ];
 
 const router = createRouter({
