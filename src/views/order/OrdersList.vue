@@ -63,10 +63,21 @@
                 <i class="far fa-calendar-alt"></i>
                 {{ formatDate(order.orderDate) }}
               </div>
+
+              <!-- GÜNCELLENDİ: Tutar alanı artık indirimi gösterecek şekilde düzenlendi -->
               <div class="order-amount">
                 <i class="fas fa-receipt"></i>
-                {{ order.totalAmount.toFixed(2) }} ₺
+                <!-- Eğer indirim varsa, orijinal fiyatı üstü çizili göster -->
+                <span v-if="order.discountAmount > 0" class="original-price">
+                  {{ (order.totalAmount + order.discountAmount).toFixed(2) }} ₺
+                </span>
+                <!-- Nihai (indirimli) fiyatı her zaman göster -->
+                <span class="final-price">
+                  {{ order.totalAmount.toFixed(2) }} ₺
+                </span>
               </div>
+              <!-- /GÜNCELLENDİ -->
+              
               <div class="order-items-count">
                 <i class="fas fa-box-open"></i>
                 {{ order.itemCount }} ürün
@@ -120,6 +131,7 @@
 </template>
 
 <script>
+// BU BÖLÜMDE HİÇBİR DEĞİŞİKLİK YAPILMADI.
 import axios from "axios";
 import { mapState } from "vuex";
 
@@ -168,7 +180,7 @@ export default {
           throw new Error("Oturum açmanız gerekiyor");
         }
 
-        const response = await axios.get("https://localhost:7135/api/Orders", {
+        const response = await axios.get("http://localhost:5294/api/Orders", {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
@@ -262,6 +274,25 @@ export default {
 </script>
 
 <style scoped>
+/* YENİ EKLENEN STİLLER: İndirimli fiyat gösterimi için */
+.order-amount {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap; /* Küçük ekranlarda alt satıra geçmesi için */
+  gap: 0.5rem;
+}
+.original-price {
+  text-decoration: line-through;
+  color: #95a5a6;
+  font-size: 0.85rem;
+}
+.final-price {
+  font-weight: 600;
+  color: #3f51b5; /* Daha belirgin bir renk */
+}
+/* /YENİ EKLENEN STİLLER */
+
+
 /* Temel Stiller */
 .orders-container {
   max-width: 800px;

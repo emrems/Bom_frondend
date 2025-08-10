@@ -8,24 +8,29 @@
         type="text"
         placeholder="Kampanya kodu girin"
         @keyup.enter="applyCoupon"
-        :disabled="hasCoupon"
+        :disabled="hasCoupon || isProcessing"
       />
       
       <!-- Tek buton alanı -->
       <button
         v-if="!hasCoupon"
         @click="applyCoupon"
-        :disabled="hasCoupon || couponCode.trim() === ''"
+        :disabled="isProcessing || couponCode.trim() === ''"
         class="apply-btn"
       >
-        Kuponu Uygula
+        <!-- YENİ: Yüklenme durumu eklendi -->
+        <span v-if="isProcessing && !removeRequest">Uygulanıyor...</span>
+        <span v-else>Kuponu Uygula</span>
       </button>
       <button
         v-else
         @click="removeCoupon"
+        :disabled="isProcessing"
         class="remove-btn"
       >
-        İndirimi Kaldır
+        <!-- YENİ: Yüklenme durumu eklendi -->
+        <span v-if="isProcessing && removeRequest">Kaldırılıyor...</span>
+        <span v-else>İndirimi Kaldır</span>
       </button>
 
       <p v-if="couponError" style="color: red; margin-top: 0.3rem">
@@ -54,10 +59,10 @@
         <span>Ara Toplam:</span>
         <span>{{ formatPrice(subtotal) }} TL</span>
       </div>
-      <div class="total-row">
+      <!-- NOT: Bu bölüm sizin orijinal kodunuzdaki gibi bırakıldı. İki ayrı indirim göstermek isterseniz önceki cevabıma bakabilirsiniz. -->
+      <div class="total-row" v-if="promoDiscount > 0 || couponDiscount > 0">
         <span>Kampanya İndirimi:</span>
-        <span v-if="totalDiscount > 0" class="discount-text">-{{ formatPrice(totalDiscount) }} TL</span>
-        <span v-else>-</span>
+        <span class="discount-text">-{{ formatPrice(totalDiscount) }} TL</span>
       </div>
       <div class="total-row">
         <span>Kargo:</span>
@@ -84,6 +89,8 @@ export default {
       couponSuccess: "",
       couponError: "",
       hasCoupon: false,
+      isProcessing: false,
+      removeRequest: false, 
     };
   },
   props: {
@@ -122,13 +129,21 @@ export default {
       return this.promoDiscount + this.couponDiscount;
     },
   },
+  async created() {
+    if (this.cartId) {
+      await this.fetchTotalsAndUpdate(""); 
+    }
+  },
   watch: {
     couponDiscount(newVal) {
       this.hasCoupon = newVal > 0;
       if (!this.hasCoupon) {
         this.couponCode = "";
-        this.couponSuccess = "";
-        this.couponError = "";
+      }
+    },
+    cartId(newVal, oldVal) {
+      if (newVal && newVal !== oldVal) {
+        this.fetchTotalsAndUpdate(""); 
       }
     },
   },
@@ -136,74 +151,66 @@ export default {
     formatPrice(price) {
       return new Intl.NumberFormat("tr-TR").format(price);
     },
-    async applyCoupon() {
+
+    // GÜNCELLENDİ: Bu fonksiyon artık kupon kodunu da yukarı emit ediyor.
+    async fetchTotalsAndUpdate(coupon) {
+      if (!this.cartId) return null;
+
+      this.isProcessing = true;
       this.couponError = "";
       this.couponSuccess = "";
 
-      const code = this.couponCode.trim();
-      if (!code) {
-        this.couponError = "Lütfen kampanya kodu girin.";
-        return;
-      }
-
       try {
-        await axios.post(
-          `https://localhost:7135/api/Promotions/validate-coupon`,
-          JSON.stringify(code),
-          { headers: { "Content-Type": "application/json" } }
-        );
-
-        this.couponSuccess = "Kupon başarıyla doğrulandı. Sepet güncelleniyor...";
-
         const response = await axios.get(
-          `https://localhost:7135/api/Promotions/cart/${this.cartId}/total`,
-          { params: { couponCode: code } }
+          `http://localhost:5294/api/Promotions/cart/${this.cartId}/total`,
+          { params: { couponCode: coupon } }
         );
-
-        const data = response.data;
-
-        this.$emit("updateTotals", {
-          subtotal: data.subtotal,
-          promoDiscount: data.promoDiscount,
-          couponDiscount: data.couponDiscount,
-          total: data.total,
-        });
-
-        this.couponSuccess = "Kupon başarıyla uygulandı.";
+        
+        // TEK DEĞİŞİKLİK BURADA: API yanıtına ek olarak, bu isteği tetikleyen kupon kodunu da ekleyip emit ediyoruz.
+        this.$emit("updateTotals", { ...response.data, appliedCoupon: coupon });
+        
+        return response.data;
       } catch (error) {
         this.couponError =
           (error.response?.data &&
             (typeof error.response.data === "string"
               ? error.response.data
               : error.response.data.title)) ||
-          "Kupon geçersiz veya hata oluştu.";
+          "Bir hata oluştu.";
+        return null; 
+      } finally {
+        this.isProcessing = false;
+        this.removeRequest = false;
       }
     },
+
+    async applyCoupon() {
+      this.removeRequest = false;
+      const code = this.couponCode.trim();
+      if (!code) {
+        this.couponError = "Lütfen kampanya kodu girin.";
+        return;
+      }
+      
+      const responseData = await this.fetchTotalsAndUpdate(code);
+
+      if (responseData) {
+        if (responseData.couponDiscount > 0) {
+          this.couponSuccess = "Kupon başarıyla uygulandı.";
+        } else {
+          this.couponError = "Geçersiz kupon kodu veya bu sepet için uygun değil.";
+        }
+      }
+    },
+
     async removeCoupon() {
-      this.couponError = "";
-      this.couponSuccess = "";
+      this.removeRequest = true;
+      this.couponCode = "";
+      const responseData = await this.fetchTotalsAndUpdate(""); 
 
-      try {
-        const response = await axios.get(
-          `https://localhost:7135/api/Promotions/cart/${this.cartId}/total`,
-          { params: { couponCode: "" } }
-        );
-
-        const data = response.data;
-
-        this.$emit("updateTotals", {
-          subtotal: data.subtotal,
-          promoDiscount: data.promoDiscount,
-          couponDiscount: data.couponDiscount,
-          total: data.total,
-        });
-
-        this.couponCode = "";
+      if (responseData) {
         this.couponSuccess = "İndirim kaldırıldı.";
         this.hasCoupon = false;
-      } catch (error) {
-        this.couponError = "İndirim kaldırılırken hata oluştu.";
-        console.error(error);
       }
     },
   },
@@ -211,6 +218,7 @@ export default {
 </script>
 
 <style scoped>
+/* BU BÖLÜMDE HİÇBİR DEĞİŞİKLİK YAPILMADI */
 .coupon-section input {
   padding: 0.5rem;
   font-size: 1rem;

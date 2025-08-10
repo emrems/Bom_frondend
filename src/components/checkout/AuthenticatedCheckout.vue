@@ -83,7 +83,6 @@
 <script>
 import axios from 'axios';
 
-
 export default {
   name: 'AuthenticatedCheckout',
   props: ['paymentToken'],
@@ -102,7 +101,8 @@ export default {
         district: 'Kadıköy', fullAddress: '', postalCode: '34700'
       },
       notes: '',
-      apiBaseUrl: 'https://localhost:7135',
+      couponCode: '', // YENİ
+      apiBaseUrl: 'http://localhost:5294',
     };
   },
  
@@ -162,7 +162,8 @@ export default {
       this.$emit('initiate-payment', {
         shippingAddressId: this.selectedShippingId,
         billingAddressId: this.isBillingDifferent ? this.selectedBillingId : this.selectedShippingId,
-        notes: this.notes
+        notes: this.notes,
+        couponCode: this.couponCode // GÜNCELLENDİ
       });
     }
   }

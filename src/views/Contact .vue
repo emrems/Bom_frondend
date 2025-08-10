@@ -184,7 +184,7 @@ export default {
       isSubmitting: false,
       submitError: null,
       submitSuccess: null,
-      apiBaseUrl: 'https://localhost:7135', // API adresinizi buraya yazabilirsiniz
+      apiBaseUrl: 'http://localhost:5294', // API adresinizi buraya yazabilirsiniz
     }
   },
   computed: {

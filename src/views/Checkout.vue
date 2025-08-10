@@ -95,7 +95,7 @@ export default {
       error: null,
       shippingCost: 50,
       paymentToken: null,
-      apiBaseUrl: "https://localhost:7135",
+      apiBaseUrl: "http://localhost:5294",
       isSubmitting: false,
       orderSuccess: false,
       orderSuccessType: null, // 'guest' veya 'authenticated'
@@ -106,6 +106,9 @@ export default {
       updatedPromoDiscount: 0,
       updatedCouponDiscount: 0,
       updatedTotal: null,
+      
+      // YENİ: OrderSummary'den gelen geçerli kupon kodunu saklamak için.
+      appliedCouponCode: "",
     };
   },
   computed: {
@@ -122,7 +125,6 @@ export default {
       }));
     },
 
-    // Normal (api güncellemesi yoksa) hesaplanan ara toplam
     subtotal() {
       return this.processedCartItems.reduce(
         (total, item) => total + item.price * item.quantity,
@@ -130,28 +132,22 @@ export default {
       );
     },
 
-    // KDV kaldırıldı: taxAmount artık yok
-
     shippingFee() {
       return this.subtotal >= 1000 ? 0 : this.shippingCost;
     },
 
-    // total artık KDV içermez: subtotal + shipping
     total() {
       return this.subtotal + this.shippingFee;
     },
 
-    // display* : eğer backend'den güncelleme geldiyse onu kullan, yoksa normal hesaplananı kullan
     displaySubtotal() {
       return this.updatedSubtotal !== null ? this.updatedSubtotal : this.subtotal;
     },
 
-    // displayShippingFee bakar: güncellenmiş subtotal'a göre shipping hesaplanır
     displayShippingFee() {
       return this.displaySubtotal >= 1000 ? 0 : this.shippingCost;
     },
 
-    // displayTotal: backend'den (updatedTotal) gelmişse onu kullan; gelmemişse displaySubtotal + displayShippingFee
     displayTotal() {
       return this.updatedTotal !== null
         ? this.updatedTotal
@@ -166,12 +162,17 @@ export default {
   methods: {
     ...mapActions(["fetchCartDetails", "clearCart"]),
 
+    // GÜNCELLENDİ: Bu metot artık kupon kodunu da yakalayıp saklıyor.
     onUpdateTotals(totals) {
-      // totals: { subtotal, promoDiscount, couponDiscount, total } - backend döndürdüğü değerleri kullan
       this.updatedSubtotal = totals.subtotal;
       this.updatedPromoDiscount = totals.promoDiscount;
       this.updatedCouponDiscount = totals.couponDiscount;
       this.updatedTotal = totals.total;
+
+      // YENİ: Eğer OrderSummary bize bir kupon kodu gönderirse, bunu sakla.
+      if (typeof totals.appliedCoupon !== 'undefined') {
+        this.appliedCouponCode = totals.appliedCoupon;
+      }
     },
 
     async handleGuestPayment(payload) {
@@ -187,12 +188,8 @@ export default {
         guestLastName: guestInfo.lastName,
         guestEmail: guestInfo.email,
         guestPhone: guestInfo.phone,
-
-        // Güncel toplamlar (KDV yok)
-        subtotal: this.displaySubtotal,
-        promoDiscount: this.updatedPromoDiscount,
-        couponDiscount: this.updatedCouponDiscount,
-        total: this.displayTotal,
+        // GÜNCELLENDİ: Kupon kodu artık payload'dan değil, data'da sakladığımız yerden geliyor.
+        couponCode: this.appliedCouponCode,
       };
 
       try {
@@ -219,18 +216,16 @@ export default {
 
     async handleAuthenticatedPayment(payload) {
       this.isSubmitting = true;
+      // payload'dan gelen 'couponCode' artık kullanılmıyor, çünkü hep boş geliyordu.
       const { shippingAddressId, billingAddressId, notes } = payload;
+      
       const orderData = {
         cartId: this.cartId,
         shippingAddressId,
         billingAddressId,
         notes,
-
-        // Güncel toplamlar (KDV yok)
-        subtotal: this.displaySubtotal,
-        promoDiscount: this.updatedPromoDiscount,
-        couponDiscount: this.updatedCouponDiscount,
-        total: this.displayTotal,
+        // GÜNCELLENDİ: Kupon kodu artık payload'dan değil, data'da sakladığımız yerden geliyor.
+        couponCode: this.appliedCouponCode,
       };
 
       try {
@@ -259,7 +254,7 @@ export default {
           throw new Error("API'den beklenen yanıt alınamadı.");
         }
       } catch (error) {
-        this.error = "Siparişiniz oluşturulurken bir hata oluştu.";
+        this.error = error.response?.data || "Siparişiniz oluşturulurken bir hata oluştu.";
         console.error(error);
       } finally {
         this.isSubmitting = false;
@@ -270,7 +265,7 @@ export default {
 </script>
 
 <style scoped>
-/* (Aynı stil; değişiklik yok) */
+/* BU BÖLÜMDE HİÇBİR DEĞİŞİKLİK YAPILMADI */
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Raleway:wght@400;500;700&display=swap");
 @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css");
 

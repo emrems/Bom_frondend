@@ -51,7 +51,7 @@ export default {
       bestsellers: [],
       loading: true,
       error: null,
-      apiBaseUrl: 'https://localhost:7135', 
+      apiBaseUrl: 'http://localhost:5294', 
     };
   },
   mounted() {

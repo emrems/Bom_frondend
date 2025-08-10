@@ -78,6 +78,9 @@
             <label for="isBillingDifferent">Fatura adresim, teslimat adresimden farklı.</label>
           </div>
           
+          <!-- YENİ EKLENEN KUPON ALANI -->
+         
+
           <div class="form-group floating-label">
             <textarea id="notes" v-model="notes" rows="2" placeholder=" "></textarea>
             <label for="notes">Sipariş Notu (Opsiyonel)</label>
@@ -132,8 +135,9 @@ export default {
       isBillingDifferent: false,
       billingAddress: null,
       notes: '',
+      couponCode: '', // YENİ: Kupon kodu için data propertysi
       showBillingModal: false,
-      apiBaseUrl: 'https://localhost:7135',
+      apiBaseUrl: 'http://localhost:5294',
       cities: [], districts: [], selectedCityId: '', 
     };
   },
@@ -184,6 +188,7 @@ export default {
         billingAddress: this.isBillingDifferent ? this.billingAddress : null,
         notes: this.notes,
         guestInfo: this.guestInfo,
+        couponCode: this.couponCode, // GÜNCELLENDİ: Kupon kodu emit ediliyor
       });
     },
   },

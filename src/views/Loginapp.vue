@@ -97,7 +97,7 @@ export default {
 
       try {
         const response = await axios.post(
-          "https://localhost:7135/api/Auth/Login",
+          "http://localhost:5294/api/Auth/Login",
           {
             email: this.email,
             password: this.password,
