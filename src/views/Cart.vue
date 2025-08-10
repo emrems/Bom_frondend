@@ -23,8 +23,8 @@
           @remove="removeItem"
         />
         <CartSummary
+          :cartItems="processedCartItems"
           :subtotal="subtotal"
-          :taxAmount="taxAmount"
           :shippingCost="shippingCost"
           :total="total"
           @go-to-checkout="goToCheckout"
@@ -71,10 +71,9 @@ export default {
     subtotal() {
       return this.processedCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
     },
-    
-    taxAmount() { return this.subtotal * 0.18; },
+
     shippingFee() { return this.subtotal >= 1000 ? 0 : this.shippingCost; },
-    total() { return this.subtotal + this.taxAmount + this.shippingFee; }
+    total() { return this.subtotal + this.shippingFee; }
   },
   async mounted() {
     this.loading = true;

@@ -9,11 +9,6 @@
       </div>
       
       <div class="summary-row">
-        <span>KDV (%18):</span>
-        <span>{{ formatPrice(taxAmount) }} TL</span>
-      </div>
-      
-      <div class="summary-row">
         <span>Kargo:</span>
         <span v-if="subtotal >= 1000" class="free-shipping-text">Ücretsiz</span>
         <span v-else>{{ formatPrice(shippingCost) }} TL</span>
@@ -42,7 +37,6 @@ export default {
   name: 'CartSummary',
   props: {
     subtotal: Number,
-    taxAmount: Number,
     shippingCost: Number,
     total: Number,
   },
