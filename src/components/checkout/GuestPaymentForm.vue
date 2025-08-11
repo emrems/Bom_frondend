@@ -137,7 +137,7 @@ export default {
       notes: '',
       couponCode: '', // YENİ: Kupon kodu için data propertysi
       showBillingModal: false,
-      apiBaseUrl: 'http://localhost:5294',
+      apiBaseUrl: 'https://localhost:7135',
       cities: [], districts: [], selectedCityId: '', 
     };
   },

@@ -115,6 +115,10 @@
           <span>Ara Toplam:</span>
           <span>{{ formatPrice(order.subTotal) }}</span>
         </div>
+        <div v-if="order.discountAmount !== undefined && order.discountAmount > 0" class="summary-row discount">
+          <span>İndirim:</span>
+          <span>-{{ formatPrice(order.discountAmount) }}</span>
+        </div>
         <div v-if="order.shippingFee !== undefined" class="summary-row">
           <span>Kargo Ücreti:</span>
           <span>{{ formatPrice(order.shippingFee) }}</span>
@@ -137,15 +141,27 @@
           v-if="canCancel" 
           @click="showCancelModal" 
           class="cancel-button"
+          :disabled="cancelLoading"
         >
-          <i class="fas fa-times-circle"></i> Siparişi İptal Et
+          <template v-if="cancelLoading">
+            <i class="fas fa-spinner fa-spin"></i> İşleniyor...
+          </template>
+          <template v-else>
+            <i class="fas fa-times-circle"></i> Siparişi İptal Et
+          </template>
         </button>
         <button 
           v-if="canRequestReturn" 
           @click="showReturnModal" 
           class="return-button"
+          :disabled="returnLoading"
         >
-          <i class="fas fa-undo"></i> İade Talebi Oluştur
+          <template v-if="returnLoading">
+            <i class="fas fa-spinner fa-spin"></i> İşleniyor...
+          </template>
+          <template v-else>
+            <i class="fas fa-undo"></i> İade Talebi Oluştur
+          </template>
         </button>
       </div>
     </div>
@@ -157,7 +173,14 @@
         <textarea v-model="cancelReason" placeholder="İptal nedeni..." rows="4"></textarea>
         <div class="modal-actions">
           <button @click="showCancelDialog = false" class="modal-cancel">Vazgeç</button>
-          <button @click="cancelOrder" class="modal-confirm">İptal Et</button>
+          <button @click="cancelOrder" class="modal-confirm" :disabled="cancelLoading">
+            <template v-if="cancelLoading">
+              <i class="fas fa-spinner fa-spin"></i> İşleniyor
+            </template>
+            <template v-else>
+              İptal Et
+            </template>
+          </button>
         </div>
       </div>
     </div>
@@ -169,7 +192,14 @@
         <textarea v-model="returnReason" placeholder="İade nedeni..." rows="4"></textarea>
         <div class="modal-actions">
           <button @click="showReturnDialog = false" class="modal-cancel">Vazgeç</button>
-          <button @click="requestReturn" class="modal-confirm">Gönder</button>
+          <button @click="requestReturn" class="modal-confirm" :disabled="returnLoading">
+            <template v-if="returnLoading">
+              <i class="fas fa-spinner fa-spin"></i> İşleniyor
+            </template>
+            <template v-else>
+              Gönder
+            </template>
+          </button>
         </div>
       </div>
     </div>
@@ -191,6 +221,8 @@ const showCancelDialog = ref(false);
 const showReturnDialog = ref(false);
 const cancelReason = ref('');
 const returnReason = ref('');
+const cancelLoading = ref(false);
+const returnLoading = ref(false);
 
 // Static Data
 const orderStatuses = [
@@ -230,7 +262,7 @@ const fetchOrderDetail = async () => {
     if (!token.value) throw new Error("Oturum açmanız gerekiyor");
 
     const id = route.params.id;
-    const response = await axios.get(`http://localhost:5294/api/Orders/${id}`, {
+    const response = await axios.get(`https://localhost:7135/api/Orders/${id}`, {
       headers: { Authorization: `Bearer ${token.value}` }
     });
     order.value = response.data;
@@ -287,21 +319,21 @@ const cancelOrder = async () => {
   }
 
   try {
-    loading.value = true;
+    cancelLoading.value = true;
     await axios.post(
-      `http://localhost:5294/api/Orders/${order.value.id}/cancel`, 
+      `https://localhost:7135/api/Orders/${order.value.id}/cancel`, 
       { reason: cancelReason.value },
       { headers: { Authorization: `Bearer ${token.value}` } }
     );
     
     showCancelDialog.value = false;
     toast.success('Sipariş başarıyla iptal edildi');
-    fetchOrderDetail();
+    await fetchOrderDetail();
   } catch (e) {
     console.error(e);
     toast.error('İptal işlemi başarısız oldu: ' + (e.response?.data?.message || e.message));
   } finally {
-    loading.value = false;
+    cancelLoading.value = false;
   }
 };
 
@@ -312,21 +344,21 @@ const requestReturn = async () => {
   }
 
   try {
-    loading.value = true;
+    returnLoading.value = true;
     await axios.post(
-      `http://localhost:5294/api/Orders/${order.value.id}/return-request`, 
+      `https://localhost:7135/api/Orders/${order.value.id}/return-request`, 
       { reason: returnReason.value },
       { headers: { Authorization: `Bearer ${token.value}` } }
     );
     
     showReturnDialog.value = false;
     toast.success('İade talebiniz başarıyla oluşturuldu');
-    fetchOrderDetail();
+    await fetchOrderDetail();
   } catch (e) {
     console.error(e);
     toast.error('İade talebi oluşturulamadı: ' + (e.response?.data?.message || e.message));
   } finally {
-    loading.value = false;
+    returnLoading.value = false;
   }
 };
 
@@ -658,6 +690,10 @@ onMounted(() => {
   border-bottom: 1px dashed #ddd;
 }
 
+.summary-row.discount {
+  color: #2ecc71;
+}
+
 .summary-row.total {
   font-weight: 600;
   font-size: 1.1rem;
@@ -784,6 +820,21 @@ onMounted(() => {
 
 .modal-confirm:hover {
   background-color: #27ae60;
+}
+
+/* Loading ve Spinner Stilleri */
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.fa-spinner {
+  animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(359deg); }
 }
 
 /* Responsive */

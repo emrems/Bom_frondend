@@ -165,7 +165,7 @@ export default {
     async fetchCategories() {
       try {
         const response = await axios.get(
-          "http://localhost:5294/api/Categories"
+          "https://localhost:7135/api/Categories"
         );
         this.categories = response.data;
       } catch (error) {

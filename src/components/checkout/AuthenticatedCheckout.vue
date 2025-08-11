@@ -102,7 +102,7 @@ export default {
       },
       notes: '',
       couponCode: '', // YENİ
-      apiBaseUrl: 'http://localhost:5294',
+      apiBaseUrl: 'https://localhost:7135',
     };
   },
  

@@ -115,7 +115,7 @@ const emailInput = ref('');
 const orderData = ref(null);
 const isLoading = ref(false);
 const errorMessage = ref('');
-const API_BASE_URL = 'http://localhost:5294'; // Gerekirse değiştirin
+const API_BASE_URL = 'https://localhost:7135'; // Gerekirse değiştirin
 
 // --- COMPUTED (HESAPLANMIŞ) DEĞİŞKENLER ---
 

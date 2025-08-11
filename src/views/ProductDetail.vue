@@ -124,7 +124,7 @@ export default {
       error: null,
       quantity: 1,
       mainImage: 'https://via.placeholder.com/600?text=Yükleniyor',
-      apiBaseUrl: 'http://localhost:5294',
+      apiBaseUrl: 'https://localhost:7135',
       showToast: false,
       toastType: 'success',
       toastTitle: '',

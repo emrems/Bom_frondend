@@ -95,7 +95,7 @@ export default {
       error: null,
       shippingCost: 50,
       paymentToken: null,
-      apiBaseUrl: "http://localhost:5294",
+      apiBaseUrl: "https://localhost:7135",
       isSubmitting: false,
       orderSuccess: false,
       orderSuccessType: null, // 'guest' veya 'authenticated'
