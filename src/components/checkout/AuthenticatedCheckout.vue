@@ -75,7 +75,15 @@
         <textarea id="notesAuth" v-model="notes" rows="2"></textarea>
       </div>
 
-      <button @click="submitOrder" class="btn payment-btn" :disabled="!selectedShippingId && !showAddressForm">siparişi oluştur</button>
+      <!-- GÜNCELLENDİ: Butonun disabled durumu ve içeriği dinamik hale getirildi -->
+      <button @click="submitOrder" class="btn payment-btn" :disabled="(!selectedShippingId && !showAddressForm) || isSubmittingOrder">
+        <span v-if="isSubmittingOrder">
+          <i class="fas fa-spinner fa-spin"></i> Sipariş Oluşturuluyor...
+        </span>
+        <span v-else>
+          Siparişi Oluştur
+        </span>
+      </button>
     </div>
   </div>
 </template>
@@ -96,13 +104,14 @@ export default {
       isBillingDifferent: false,
       showAddressForm: false,
       isSaving: false,
+      isSubmittingOrder: false, // YENİ: Sipariş oluşturma anındaki yüklenme durumunu takip eder.
       newAddress: {
         addressTitle: '', contactName: '', phoneNumber: '', city: 'İstanbul',
         district: 'Kadıköy', fullAddress: '', postalCode: '34700'
       },
       notes: '',
-      couponCode: '', // YENİ
-      apiBaseUrl: 'https://localhost:7135',
+      couponCode: '',
+      apiBaseUrl: 'http://localhost:5294',
     };
   },
  
@@ -111,10 +120,14 @@ export default {
     await this.fetchAddresses();
   },
   methods: {
+    // YENİ: Bu metot, üst bileşen tarafından (örneğin API hatası durumunda)
+    // çağrılarak butonun tekrar aktif hale gelmesini sağlar.
+    resetSubmitState() {
+      this.isSubmittingOrder = false;
+    },
     async fetchAddresses() {
       this.loading = true;
       try {
-      
         const token = this.$store.state.token;
         if (!token) {
             throw new Error("Kullanıcı token'ı bulunamadı. Lütfen giriş yapın.");
@@ -150,7 +163,10 @@ export default {
           this.isSaving = false;
       }
     },
+    // GÜNCELLENDİ: Metodun başına yüklenme durumunu başlatan ve çoklu tıklamayı önleyen kod eklendi.
     submitOrder() {
+      if (this.isSubmittingOrder) return; // Eğer zaten gönderiliyorsa, tekrar göndermeyi engelle.
+
       if (!this.selectedShippingId) {
         if (this.showAddressForm) {
             alert("Lütfen önce yeni adresi kaydedin veya işlemi iptal edin.");
@@ -159,11 +175,14 @@ export default {
         }
         return;
       }
+
+      this.isSubmittingOrder = true; // Yüklenme durumunu başlat.
+
       this.$emit('initiate-payment', {
         shippingAddressId: this.selectedShippingId,
         billingAddressId: this.isBillingDifferent ? this.selectedBillingId : this.selectedShippingId,
         notes: this.notes,
-        couponCode: this.couponCode // GÜNCELLENDİ
+        couponCode: this.couponCode
       });
     }
   }
@@ -189,7 +208,7 @@ export default {
 .form-group-checkbox { display: flex; align-items: center; gap: 0.8rem; }
 .btn-link { background: none; border: none; color: #c5a47e; cursor: pointer; text-decoration: underline; padding: 0.5rem 0; font-family: 'Raleway', sans-serif; font-size: 1rem; align-self: flex-start; }
 hr { border: none; border-top: 1px solid #f0f0f0; margin: 2rem 0; }
-.btn { padding: 14px 35px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; background-color: #c5a47e; color: white; }
+.btn { padding: 14px 35px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; background-color: #c5a47e; color: white; display: inline-flex; justify-content: center; align-items: center; } /* YENİ: İkon ve metni ortalamak için flex eklendi */
 .payment-btn { width: 100%; margin-top: 1rem; }
 .save-address-btn { align-self: flex-start; }
 .btn:disabled { opacity: 0.7; cursor: not-allowed; }
@@ -197,4 +216,10 @@ hr { border: none; border-top: 1px solid #f0f0f0; margin: 2rem 0; }
 .btn-secondary { background-color: #f0f0f0; color: #333; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-10px); }
+
+/* YENİ: Buton içindeki dönen ikon için stil */
+.btn .fa-spinner {
+  font-size: 1.1rem;
+  margin-right: 0.7rem;
+}
 </style>

@@ -102,7 +102,7 @@ export default {
       loading: true,
       error: null,
       lastUpdated: null,
-      apiBaseUrl: 'https://localhost:7135',
+      apiBaseUrl: 'http://localhost:5294',
       showTable: false,
     };
   },

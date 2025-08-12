@@ -162,7 +162,7 @@ export default {
 
       try {
         const response = await axios.get(
-          `https://localhost:7135/api/Promotions/cart/${this.cartId}/total`,
+          `http://localhost:5294/api/Promotions/cart/${this.cartId}/total`,
           { params: { couponCode: coupon } }
         );
         

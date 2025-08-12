@@ -39,7 +39,7 @@
 
     <!-- 2. Sonuç Bölümü -->
     <div v-if="orderData" class="result-container">
-      <!-- YENİ ve PROFESYONEL Özel Durum Kartı Tasarımı -->
+      <!-- Özel Durum Kartı Tasarımı -->
       <div v-if="isExceptionStatus" class="exception-status-card" :class="exceptionStatusClass">
         <div class="exception-icon-wrapper">
           <i :class="exceptionStatusIcon"></i>
@@ -80,13 +80,19 @@
         </div>
       </div>
       
-      <button @click="resetSearch" class="new-query-button">Yeni Sorgu Yap</button>
+      <!-- GÜNCELLENDİ: Butonlar bir div içine alındı ve yeni buton eklendi -->
+      <div class="action-buttons">
+        <button @click="resetSearch" class="new-query-button">Yeni Sorgu Yap</button>
+        <button @click="goToHome" class="home-button">Ana Sayfaya Dön</button>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router'; // YENİ: vue-router'dan useRouter import edildi
 import axios from 'axios';
 
 // --- STATİK VERİLER ---
@@ -115,7 +121,8 @@ const emailInput = ref('');
 const orderData = ref(null);
 const isLoading = ref(false);
 const errorMessage = ref('');
-const API_BASE_URL = 'https://localhost:7135'; // Gerekirse değiştirin
+const router = useRouter(); // YENİ: Router instance'ı oluşturuldu
+const API_BASE_URL = 'http://localhost:5294'; // Gerekirse değiştirin
 
 // --- COMPUTED (HESAPLANMIŞ) DEĞİŞKENLER ---
 
@@ -188,6 +195,11 @@ const resetSearch = () => {
   emailInput.value = '';
   orderData.value = null;
   errorMessage.value = '';
+};
+
+// YENİ: Ana sayfaya yönlendiren metot
+const goToHome = () => {
+  router.push('/');
 };
 
 // Gelen İngilizce status değerini Türkçe'ye çevirir
@@ -280,11 +292,18 @@ h1, h2 {
   cursor: not-allowed;
 }
 
-.new-query-button {
+/* YENİ: Butonları sarmalayan div için stiller */
+.action-buttons {
   margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap; /* Mobil için */
+}
+
+/* GÜNCELLENDİ: `margin-top` ana kapsayıcıya taşındığı için buradan kaldırıldı. */
+.new-query-button, .home-button {
   padding: 0.8rem 1.5rem;
-  background-color: #95a5a6;
-  color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -292,9 +311,25 @@ h1, h2 {
   transition: background-color 0.2s;
 }
 
+.new-query-button {
+  background-color: #95a5a6;
+  color: white;
+}
+
 .new-query-button:hover {
   background-color: #7f8c8d;
 }
+
+/* YENİ: Ana sayfaya dön butonu için stiller */
+.home-button {
+  background-color: #3498db;
+  color: white;
+}
+
+.home-button:hover {
+  background-color: #2980b9;
+}
+
 
 .error-message {
   color: #e74c3c;
@@ -417,7 +452,7 @@ h1, h2 {
   font-size: 1.1rem;
 }
 
-/* YENİ ve PROFESYONEL ÖZEL DURUM KARTI STİLLERİ */
+/* ÖZEL DURUM KARTI STİLLERİ */
 .exception-status-card {
   display: flex;
   align-items: center;

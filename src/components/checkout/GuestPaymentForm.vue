@@ -78,16 +78,16 @@
             <label for="isBillingDifferent">Fatura adresim, teslimat adresimden farklı.</label>
           </div>
           
-          <!-- YENİ EKLENEN KUPON ALANI -->
-         
-
           <div class="form-group floating-label">
             <textarea id="notes" v-model="notes" rows="2" placeholder=" "></textarea>
             <label for="notes">Sipariş Notu (Opsiyonel)</label>
           </div>
           
+          <!-- GÜNCELLENDİ: Butonun içeriği dönen ikonlu versiyonla değiştirildi -->
           <button type="submit" class="btn payment-btn" :disabled="isSubmitting">
-            <span v-if="isSubmitting">⏳ Siparişiniz işleniyor...</span>
+            <span v-if="isSubmitting">
+              <i class="fas fa-spinner fa-spin"></i> Siparişiniz İşleniyor...
+            </span>
             <span v-else>Siparişi Oluştur</span>
           </button>
         </form>
@@ -118,9 +118,9 @@ import BillingAddressModal from './BillingAddressModal.vue';
 export default {
   name: 'GuestPaymentForm',
   components: { BillingAddressModal },
+  // GÜNCELLENDİ: `isSubmitting` prop'u kaldırıldı, state içeriden yönetilecek.
   props: { 
     paymentToken: String,
-    isSubmitting: Boolean
   },
   emits: ['initiate-payment'],
   data() {
@@ -135,9 +135,10 @@ export default {
       isBillingDifferent: false,
       billingAddress: null,
       notes: '',
-      couponCode: '', // YENİ: Kupon kodu için data propertysi
+      couponCode: '',
       showBillingModal: false,
-      apiBaseUrl: 'https://localhost:7135',
+      isSubmitting: false, // YENİ: Yüklenme durumu artık bileşenin kendi datası.
+      apiBaseUrl: 'http://localhost:5294',
       cities: [], districts: [], selectedCityId: '', 
     };
   },
@@ -150,6 +151,10 @@ export default {
     await this.fetchCities();
   },
   methods: {
+    // YENİ: Üst bileşenin, hata durumunda butonu resetlemesi için.
+    resetSubmitState() {
+      this.isSubmitting = false;
+    },
     async fetchCities() {
       try {
         const response = await axios.get(`${this.apiBaseUrl}/api/locations/cities/1`);
@@ -176,19 +181,25 @@ export default {
     saveBillingAddress(addressData) {
       this.billingAddress = addressData;
     },
+    // GÜNCELLENDİ: Metodun en başına yüklenme durumunu başlatan mantık eklendi.
     async submitForm() {
+      if (this.isSubmitting) return; // Zaten gönderiliyorsa tekrar tıklamayı engelle
+
       if (!this.shippingAddress.district) { alert("Lütfen teslimat için bir ilçe seçiniz."); return; }
       if (this.isBillingDifferent && !this.billingAddress) {
         alert('Lütfen açılan pencereden fatura adresini girip kaydedin.');
         this.showBillingModal = true;
         return;
       }
+      
+      this.isSubmitting = true; // Yüklenme durumunu başlat
+
       this.$emit('initiate-payment', {
         shippingAddress: this.shippingAddress,
         billingAddress: this.isBillingDifferent ? this.billingAddress : null,
         notes: this.notes,
         guestInfo: this.guestInfo,
-        couponCode: this.couponCode, // GÜNCELLENDİ: Kupon kodu emit ediliyor
+        couponCode: this.couponCode,
       });
     },
   },
@@ -231,11 +242,18 @@ export default {
 hr { border: none; border-top: 1px solid #f0f0f0; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-10px); }
-.btn { padding: 14px 35px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; background-color: #c5a47e; color: white; box-shadow: 0 8px 20px rgba(197, 164, 126, 0.3); }
+/* GÜNCELLENDİ: Butona flex özellikleri eklendi, ikon ve metni ortalamak için. */
+.btn { padding: 14px 35px; font-size: 1.1rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; background-color: #c5a47e; color: white; box-shadow: 0 8px 20px rgba(197, 164, 126, 0.3); display: inline-flex; justify-content: center; align-items: center; }
 .btn:hover:not(:disabled) { background-color: #b38e64; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(197, 164, 126, 0.4); }
 .payment-btn { padding: 16px; font-size: 1.2rem; margin-top: 1rem; width: 100%; }
 .payment-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
 .form-fade-enter-active, .form-fade-leave-active { transition: opacity 0.4s ease; }
 .form-fade-enter-from, .form-fade-leave-to { opacity: 0; }
 @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
+
+/* YENİ: Buton içindeki dönen ikon için stil eklendi. */
+.btn .fa-spinner {
+  font-size: 1.2rem;
+  margin-right: 0.7rem;
+}
 </style>
