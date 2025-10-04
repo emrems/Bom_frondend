@@ -29,14 +29,26 @@ Vue.js frontend ve ASP.NET Core backend kullanılarak geliştirilmiştir.
 
 
 ---
-<img width="1892" height="920" alt="image" src="https://github.com/user-attachments/assets/3fdad4a4-9d73-49df-8792-0b382f149a48" />
-<img width="1394" height="813" alt="image" src="https://github.com/user-attachments/assets/a243b31f-2741-4fda-8239-e1ee885b56b3" />
-<img width="499" height="838" alt="image" src="https://github.com/user-attachments/assets/6463449a-e800-40a5-9e09-d848f1dcf2d1" />
-<img width="1882" height="922" alt="image" src="https://github.com/user-attachments/assets/932b8ada-4bf8-4ae3-9fc9-2eee69f26ab4" />
-<img width="1901" height="915" alt="image" src="https://github.com/user-attachments/assets/37ef14cf-07af-44c0-9391-4876010ea85e" />
-<img width="1098" height="644" alt="image" src="https://github.com/user-attachments/assets/bdc3d859-7829-49bc-98c0-76f1abcaa3aa" />
-<img width="1075" height="867" alt="image" src="https://github.com/user-attachments/assets/19a049f3-c7cc-49ef-a492-f0a1d0bbca66" />
-<img width="1014" height="886" alt="image" src="https://github.com/user-attachments/assets/5519d903-8f2b-4d75-a5de-abe140a30361" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/3fdad4a4-9d73-49df-8792-0b382f149a48" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/a243b31f-2741-4fda-8239-e1ee885b56b3" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/6463449a-e800-40a5-9e09-d848f1dcf2d1" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/932b8ada-4bf8-4ae3-9fc9-2eee69f26ab4" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/37ef14cf-07af-44c0-9391-4876010ea85e" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/bdc3d859-7829-49bc-98c0-76f1abcaa3aa" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/19a049f3-c7cc-49ef-a492-f0a1d0bbca66" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/5519d903-8f2b-4d75-a5de-abe140a30361" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/92568d3b-8524-4529-899d-f825db9afda6" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/8e3eb9c0-c9b3-49b9-ba3a-b840fb6eed5e" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/d09f02c4-eeba-467e-9e1a-e16ef4be9985" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/bcb4b700-559e-450d-853c-e0d0494ec0c3" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/5f6d5fad-91b0-4764-b4a1-9ed475d534fe" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/8e61d9a4-fa64-441d-9a12-28e5bc7c0a68" />
+
+
+
+
+
+
 
 
 
