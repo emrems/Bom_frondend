@@ -2,6 +2,7 @@
 
 Bu proje, **freelance olarak geliştirilmiş bir pırlanta ve kuyumcu satış sitesi** nin frondend tarafı vardır.  
 Vue.js frontend ve ASP.NET Core backend kullanılarak geliştirilmiştir. 
+Admin Paneli ise ASP.NET MVC ile yapılmıştır
 
 ---
 
@@ -17,7 +18,7 @@ Vue.js frontend ve ASP.NET Core backend kullanılarak geliştirilmiştir.
 - Siparişleri listeleme iptal iade isteği oluşturma
 - mail entegrasyonu(sisteme giriş yapıldığında,iade iptal isteğinde vs kullanıcıya mail ile bilgilendirme yapılmaktadır)
 - Web kazıma ile Kapalıçarşı altın fiyat kurlarını gösterme
-- biröok özellik daha
+- birçok özellik daha
 
 ---
 
